@@ -1,0 +1,11 @@
+{
+    "name" : "navigator",
+    "version-string" : "navigator-win",
+    "dependencies": [
+        "zlib",
+        "libpng",
+        "freeglut",
+        "glfw3",
+        "magic-enum"
+    ]
+}

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "types.h"
+
 class AApplication {
 
 	virtual bool Execute(float deltaTime) = 0;

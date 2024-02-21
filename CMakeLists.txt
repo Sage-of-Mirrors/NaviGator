@@ -11,6 +11,7 @@ file(GLOB NAVIGATOR_SRC
     # NaviGator
     "src/*.cpp"
     "include/*.hpp"
+    "include/*.h"
     
     "src/application/*.cpp"
     "include/application/*.hpp"

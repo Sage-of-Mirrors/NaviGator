@@ -1,24 +1,6 @@
 #pragma once
 
-#include <glm/vec2.hpp>
-
-#include <cstdint>
-#include <string>
-#include <vector>
-#include <filesystem>
-
-
-class MScenegraph;
-class MJointData;
-class MShapeData;
-class MTextureData;
-class MMaterialData;
-
-class AJ3DContext;
-
-namespace bStream {
-    class CStream;
-}
+#include "types.h"
 
 class AGatorContext {
     glm::vec2 mAppPosition;
@@ -29,6 +11,8 @@ class AGatorContext {
     uint32_t mDockNodeRightID;
     uint32_t mDockNodeDownID;
     uint32_t mDockNodeLeftID;
+
+    void OpenFileCB();
 
 public:
     AGatorContext();

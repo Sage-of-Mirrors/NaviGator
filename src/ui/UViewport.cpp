@@ -32,12 +32,12 @@ void UViewport::CreateFramebuffer() {
 
     // Generate color texture
     glCreateTextures(GL_TEXTURE_2D, 2, mTexIds);
-    glTextureStorage2D(mTexIds[TEX_COLOR], 1, GL_RGB8, mViewportSize.x, mViewportSize.y);
+    glTextureStorage2D(mTexIds[TEX_COLOR], 1, GL_RGB8, GLsizei(mViewportSize.x), GLsizei(mViewportSize.y));
     glTextureParameteri(mTexIds[TEX_COLOR], GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTextureParameteri(mTexIds[TEX_COLOR], GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     
     // Generate depth texture
-    glTextureStorage2D(mTexIds[TEX_DEPTH], 1, GL_DEPTH_COMPONENT32F, mViewportSize.x, mViewportSize.y);
+    glTextureStorage2D(mTexIds[TEX_DEPTH], 1, GL_DEPTH_COMPONENT32F, GLsizei(mViewportSize.x), GLsizei(mViewportSize.y));
 
     // Attach textures to framebuffer
     glNamedFramebufferTexture(mFBO, GL_COLOR_ATTACHMENT0, mTexIds[TEX_COLOR], 0);
@@ -80,7 +80,7 @@ void UViewport::RenderUI(float deltaTime) {
     }
 
     ResizeViewport();
-    ImGui::Image((void*)mTexIds[TEX_COLOR], { mViewportSize.x, mViewportSize.y }, { 0, 1 }, { 1, 0 });
+    ImGui::Image((void*)size_t(mTexIds[TEX_COLOR]), { mViewportSize.x, mViewportSize.y }, { 0, 1 }, { 1, 0 });
 
     ImGui::End();
 // Window end

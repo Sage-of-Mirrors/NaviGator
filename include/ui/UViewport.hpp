@@ -1,11 +1,7 @@
 #pragma once
 
+#include "types.h"
 #include "application/ACamera.hpp"
-
-#include <string>
-
-
-class AJ3DContext;
 
 class UViewport {
     ASceneCamera mCamera;

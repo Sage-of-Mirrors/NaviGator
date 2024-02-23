@@ -7,9 +7,4 @@
 #include <string>
 #include <vector>
 #include <filesystem>
-
-namespace bStream {
-    class CStream;
-    class CFileStream;
-    class CMemoryStream;
-}
+#include <memory>

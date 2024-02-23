@@ -29,6 +29,11 @@ public:
     glm::vec2 GetViewportSize() const { return mViewportSize; }
     glm::vec2 GetViewportPosition() const { return mViewportPos; }
 
+    ASceneCamera& GetCamera() { return mCamera; }
+
+    void BindViewport();
+    void UnbindViewport();
+
     void RenderUI(float deltaTime);
     //void RenderScene(AJ3DContext* ctx, float deltaTime);
 };

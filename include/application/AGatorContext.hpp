@@ -2,6 +2,9 @@
 
 #include "types.h"
 
+class UViewport;
+class ANavContext;
+
 class AGatorContext {
     glm::vec2 mAppPosition;
     bool bIsDockingConfigured;
@@ -12,7 +15,13 @@ class AGatorContext {
     uint32_t mDockNodeDownID;
     uint32_t mDockNodeLeftID;
 
-    void OpenFileCB();
+    std::shared_ptr<UViewport> mMainViewport;
+
+    std::shared_ptr<ANavContext> mNavContext;
+
+    void LoadFileCB();
+
+    void OpenFile(std::filesystem::path filePath);
 
 public:
     AGatorContext();

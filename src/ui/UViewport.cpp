@@ -9,7 +9,7 @@
 constexpr int TEX_COLOR = 0;
 constexpr int TEX_DEPTH = 1;
 
-constexpr float COLOR_RESET[] = { 0.5f, 0.5f, 0.5f, 1.0f };
+constexpr float COLOR_RESET[] = { 0.5f, 0.5f, 0.75f, 1.0f };
 constexpr float DEPTH_RESET = 1.0f;
 
 
@@ -86,6 +86,20 @@ void UViewport::RenderUI(float deltaTime) {
 // Window end
 
     ImGui::PopStyleVar();
+}
+
+void UViewport::BindViewport() {
+    // Bind FBO
+    glBindFramebuffer(GL_FRAMEBUFFER, mFBO);
+    glViewport(0, 0, mViewportSize.x, mViewportSize.y);
+
+    glDepthMask(GL_TRUE);
+    glClearBufferfv(GL_COLOR, 0, COLOR_RESET);
+    glClearBufferfv(GL_DEPTH, 0, &DEPTH_RESET);
+}
+
+void UViewport::UnbindViewport() {
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 //void UViewport::RenderScene(AJ3DContext* ctx, float deltaTime) {

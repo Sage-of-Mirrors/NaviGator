@@ -1,6 +1,8 @@
 #include "application/AGatorContext.hpp"
-
 #include "application/AInput.hpp"
+#include "application/ANavContext.hpp"
+
+#include "ui/UViewport.hpp"
 
 #include <bstream.h>
 
@@ -10,7 +12,8 @@
 
 
 AGatorContext::AGatorContext() : bIsDockingConfigured(false), mMainDockSpaceID(UINT32_MAX), mDockNodeTopID(UINT32_MAX),
-	mDockNodeRightID(UINT32_MAX), mDockNodeDownID(UINT32_MAX), mDockNodeLeftID(UINT32_MAX), mAppPosition({ 0, 0 })
+	mDockNodeRightID(UINT32_MAX), mDockNodeDownID(UINT32_MAX), mDockNodeLeftID(UINT32_MAX), mAppPosition({ 0, 0 }),
+	mNavContext(std::make_shared<ANavContext>())
 {
 
 }
@@ -47,7 +50,8 @@ void AGatorContext::RenderMenuBar() {
 	ImGui::BeginMainMenuBar();
 
 	if (ImGui::BeginMenu("File")) {
-		if (ImGui::MenuItem("Open...")) {			
+		if (ImGui::MenuItem("Open...")) {
+			LoadFileCB();
 		}
 		if (ImGui::MenuItem("Save...")) {
 		}
@@ -71,22 +75,48 @@ void AGatorContext::Update(float deltaTime) {
 void AGatorContext::Render(float deltaTime) {
 	SetUpDocking();
 	RenderMenuBar();
+
+	mMainViewport->RenderUI(deltaTime);
+
+	// Render open file dialog
+	if (ImGuiFileDialog::Instance()->Display("loadFileDialog")) {
+		if (ImGuiFileDialog::Instance()->IsOk()) {
+			OpenFile(ImGuiFileDialog::Instance()->GetFilePathName());
+		}
+
+		ImGuiFileDialog::Instance()->Close();
+	}
 }
 
 void AGatorContext::PostRender(float deltaTime) {
-
+	mMainViewport->BindViewport();
+	mNavContext->Render(mMainViewport->GetCamera());
+	mMainViewport->UnbindViewport();
 }
 
 void AGatorContext::SetAppPosition(const int xPos, const int yPos) {
 	mAppPosition = { xPos, yPos };
 }
 
-void AGatorContext::OnGLInitialized() {
+void AGatorContext::OpenFile(std::filesystem::path filePath) {
+	if (!std::filesystem::exists(filePath) || !filePath.has_extension()) {
+		return;
+	}
 
+	if (filePath.extension() == ".ynv") {
+		mNavContext->LoadNavmesh(filePath);
+	}
+}
+
+void AGatorContext::LoadFileCB() {
+	ImGuiFileDialog::Instance()->OpenDialog("loadFileDialog", "Open File", "Navmeshes{.ynv},GLTF{.gltf}", ".", 1, nullptr, ImGuiFileDialogFlags_Modal);
 }
 
 void AGatorContext::OnFileDropped(std::filesystem::path filePath) {
-	if (!filePath.has_extension()) {
-		return;
-	}
+	OpenFile(filePath);
+}
+
+void AGatorContext::OnGLInitialized() {
+	mMainViewport = std::make_shared<UViewport>("Main Viewport");
+	mNavContext->OnGLInitialized();
 }

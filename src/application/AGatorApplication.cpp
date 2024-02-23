@@ -159,5 +159,7 @@ void GLFWDropCallback(GLFWwindow* window, int count, const char* paths[]) {
 		return;
 	}
 
-	GatorContext->OnFileDropped(paths[0]);
+	for (int i = 0; i < count; i++) {
+		GatorContext->OnFileDropped(paths[i]);
+	}
 }

@@ -97,7 +97,7 @@ void AInput::GLFWKeyCallback(GLFWwindow* window, int key, int scancode, int acti
 }
 
 void AInput::GLFWMousePositionCallback(GLFWwindow* window, double xpos, double ypos) {
-	SetMousePosition(xpos, ypos);
+	SetMousePosition(uint32_t(xpos), uint32_t(ypos));
 }
 
 void AInput::GLFWMouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
@@ -111,5 +111,5 @@ void AInput::GLFWMouseButtonCallback(GLFWwindow* window, int button, int action,
 }
 
 void AInput::GLFWMouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
-	SetMouseScrollDelta(yoffset);
+	SetMouseScrollDelta(uint32_t(yoffset));
 }

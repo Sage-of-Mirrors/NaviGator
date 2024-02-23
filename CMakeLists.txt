@@ -18,9 +18,12 @@ file(GLOB NAVIGATOR_SRC
     
     "src/ui/*.cpp"
     "include/ui/*.hpp"
-    
-    # bStream
-    "lib/bStream/*.cpp"
+
+    "src/util/*.cpp"
+    "include/util/*.hpp"
+
+    "src/ubo/*.cpp"
+    "include/ubo/*.hpp"
     
     # glad
     "lib/glad/src/*.c"
@@ -31,7 +34,7 @@ file(GLOB NAVIGATOR_SRC
 
 add_executable(navigator ${NAVIGATOR_SRC})
 
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/asset/font/MaterialSymbolsRounded.ttf DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/asset/font)
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/asset DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
-target_include_directories(navigator PUBLIC include lib/glad/include lib/bStream lib/glm lib/ImGuiFileDialog lib/librdr3/include)
-target_link_libraries(navigator PUBLIC glm imgui glfw librdr3)
+target_include_directories(navigator PUBLIC include lib/glad/include lib/glm lib/ImGuiFileDialog lib/librdr3/include lib/Recast/include)
+target_link_libraries(navigator PUBLIC glm imgui glfw librdr3 Recast)

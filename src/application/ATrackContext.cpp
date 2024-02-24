@@ -18,6 +18,7 @@ constexpr uint32_t VERTEX_ATTRIB_INDEX = 0;
 constexpr glm::vec4 NORMAL_COLOR = { 1.0f, 0.5f, 0.5f, 1.0f };
 constexpr glm::vec4 CURVE_COLOR = { 0.5f, 1.0f, 0.5f, 1.0f };
 constexpr glm::vec4 HANDLE_COLOR = { 0.5f, 0.5f, 1.0f, 1.0f };
+constexpr glm::vec4 JUNCTION_COLOR = { 1.0f, 0.5f, 1.0f, 1.0f };
 
 ATrackContext::ATrackContext() : mPntVBO(0), mPntIBO(0), mPntVAO(0), mSimpleProgram(0), bGLInitialized(false), mBaseColorUniform(0) {
 
@@ -184,7 +185,7 @@ void ATrackContext::Render(ASceneCamera& camera) {
 
     for (shared_vector<UTracks::UTrackPoint> trackPoints : mTrackPoints) {
         for (const std::shared_ptr<UTracks::UTrackPoint> pnt : trackPoints) {
-            if (pnt->IsCurve()) {
+            if (pnt->IsJunction()) {
                 glUniform4fv(mBaseColorUniform, 1, &CURVE_COLOR.x);
             }
             else {

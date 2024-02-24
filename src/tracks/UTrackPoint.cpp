@@ -3,7 +3,9 @@
 #include <iostream>
 
 UTracks::UTrackPoint::UTrackPoint() : mPosition(glm::zero<glm::vec3>()), mHandleA(glm::zero<glm::vec3>()),
-    mHandleB(glm::zero<glm::vec3>()), mSomeScalar(0.0f), mType(ETrackPointType::Normal), bIsCurve(false) {
+    mHandleB(glm::zero<glm::vec3>()), mSomeScalar(0.0f), mStationType(0), bIsTunnel(false), bIsJunction(false),
+    bIsCurve(false)
+{
 
 }
 
@@ -43,7 +45,7 @@ void UTracks::UTrackPoint::LoadPoint(std::stringstream& stream) {
         mPosition.y = mPosition.z;
         mPosition.z = -yTmp;
 
-        float yTmp = mHandleA.y;
+        yTmp = mHandleA.y;
         mHandleA.y = mHandleA.z;
         mHandleA.z = -yTmp;
 
@@ -69,9 +71,12 @@ void UTracks::UTrackPoint::LoadPoint(std::stringstream& stream) {
     std::getline(stream, token, ' ');
     mSomeScalar = std::stof(token.data());
 
-    mType = stream.get() - 0x30; // Subtract the value of the char '0' to get the actual value.
+    uint8_t infoBits = stream.get() - 0x30; // Subtract the value of the char '0' to get the actual value.
+    mStationType =  infoBits & ENodeInfoBits::BITS_STATION_TYPE;
+    bIsTunnel    = (infoBits & ENodeInfoBits::BITS_IS_TUNNEL)   >> 2;
+    bIsJunction  = (infoBits & ENodeInfoBits::BITS_IS_JUNCTION) >> 3;
 
-    if (mType == ETrackPointType::Stop_1 || mType == ETrackPointType::Stop_2 || mType == ETrackPointType::Switch) {
+    if (bIsJunction || mStationType != ENodeStationType::None) {
         std::getline(stream, token, '\n');
         mArgument = std::string(token);
     }
@@ -91,18 +96,26 @@ void UTracks::UTrackPoint::SavePoint(std::stringstream& stream) {
         stream << mPosition.x << " " << -mPosition.z << " " << mPosition.y << " ";
     }
 
-    stream << mSomeScalar << " " << mType;
+    stream << mSomeScalar << " ";
 
-    if (mType == ETrackPointType::Stop_1 || mType == ETrackPointType::Stop_2 || mType == ETrackPointType::Switch) {
-        stream << mArgument << "\n";
+    uint8_t infoBits = 0;
+    infoBits |= mStationType & ENodeInfoBits::BITS_STATION_TYPE;
+    infoBits |= bIsTunnel   << 2;
+    infoBits |= bIsJunction << 3;
+
+    stream << infoBits;
+
+    if (bIsJunction || mStationType != ENodeStationType::None) {
+        stream << " " << mArgument << "\n";
     }
     else {
         stream << "\n";
     }
 }
 
-void UTracks::UTrackPoint::UpdateArgument() {
-    if (mType != ETrackPointType::Switch || mSwitchPartner.expired()) {
+void UTracks::UTrackPoint::TrySetJunctionArgument() {
+    if (!bIsJunction || mSwitchPartner.expired()) {
+        mArgument = "";
         return;
     }
 

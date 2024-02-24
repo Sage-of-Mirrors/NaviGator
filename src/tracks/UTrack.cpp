@@ -85,7 +85,7 @@ void UTracks::UTrack::PreprocessNodes() {
             mCurvePointCount++;
         }
 
-        pnt->UpdateArgument();
+        pnt->TrySetJunctionArgument();
     }
 }
 

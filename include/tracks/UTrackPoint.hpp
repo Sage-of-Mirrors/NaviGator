@@ -5,14 +5,16 @@
 #include <sstream>
 
 namespace UTracks {
-    enum ETrackPointType : uint8_t {
-        Normal = 0,
-        Stop_1 = 1,
-        Stop_2 = 2,
-        // No 3?
-        Unk_4 = 4,
-        // No 5, 6, 7?
-        Switch = 8
+    enum ENodeInfoBits {
+        BITS_STATION_TYPE   = 0x03,
+        BITS_IS_TUNNEL      = 0x04,
+        BITS_IS_JUNCTION    = 0x08
+    };
+
+    enum ENodeStationType {
+        None,
+        Left_Side,
+        Right_Side
     };
 
     class UTrackPoint {
@@ -20,8 +22,16 @@ namespace UTracks {
 
         // Primary location of the point in world space.
         glm::vec3 mPosition;
-        uint32_t mType;
-        // Purpose varies depending on mType.
+        // What kind of station this node represents - can be None, a station on the train's left side,
+        // or a station on the train's right side.
+        uint8_t mStationType;
+        // Whether this node is inside of a tunnel.
+        bool bIsTunnel;
+        // Whether this node can act as a junction to another track config.
+        bool bIsJunction;
+
+        // If bIsSwitch is false and mStationType is not None, this is the name of the station the node represents.
+        // If bIsSwitch is true, this is the name of the track config this node can switch to.
         std::string mArgument;
 
         // Properties for curve points
@@ -44,7 +54,7 @@ namespace UTracks {
         void LoadPoint(std::stringstream& stream);
         void SavePoint(std::stringstream& stream);
 
-        void UpdateArgument();
+        void TrySetJunctionArgument();
 
         const glm::vec3& GetPosition() const { return mPosition; }
         const glm::vec3& GetHandleA() const { return mHandleA; }
@@ -54,5 +64,6 @@ namespace UTracks {
         void SetParentTrackName(std::string name) { mParentTrackName = name; }
 
         bool IsCurve() const { return bIsCurve; }
+        bool IsJunction() const { return bIsJunction; }
     };
 }

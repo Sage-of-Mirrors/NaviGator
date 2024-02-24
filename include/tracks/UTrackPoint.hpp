@@ -32,6 +32,8 @@ namespace UTracks {
         glm::vec3 mHandleB;
         float mSomeScalar;
 
+        // Name of the track this point belongs to.
+        std::string mParentTrackName;
         // Weak ref to the point this one is connected to on another track, assuming mType == Switch.
         std::weak_ptr<UTrackPoint> mSwitchPartner;
 
@@ -42,6 +44,13 @@ namespace UTracks {
         void LoadPoint(std::stringstream& stream);
         void SavePoint(std::stringstream& stream);
 
+        void UpdateArgument();
+
         const glm::vec3& GetPosition() const { return mPosition; }
+        const std::string& GetParentTrackName() const { return mParentTrackName; }
+
+        void SetParentTrackName(std::string name) { mParentTrackName = name; }
+
+        bool IsCurve() const { return bIsCurve; }
     };
 }

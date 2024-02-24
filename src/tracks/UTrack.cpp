@@ -8,7 +8,7 @@
 #include <iostream>
 #include <string>
 
-UTracks::UTrack::UTrack() : mGameFilename(""), mConfigName(""), bStopsAtStations(false), mBrakingDist(10)
+UTracks::UTrack::UTrack() : mGameFilename(""), mConfigName(""), bStopsAtStations(false), mBrakingDist(10), mCurvePointCount(0)
 {
 
 }
@@ -70,11 +70,39 @@ bool UTracks::UTrack::LoadNodePoints(std::filesystem::path dirName) {
     for (uint32_t i = 0; i < totalNodeCount; i++) {
         std::shared_ptr<UTrackPoint> pt = std::make_shared<UTrackPoint>();
         pt->LoadPoint(stream);
+        pt->SetParentTrackName(mConfigName);
 
         mPoints.push_back(pt);
     }
 }
 
-void UTracks::UTrack::SaveNodePoints(std::filesystem::path dirName) {
+void UTracks::UTrack::PreprocessNodes() {
+    for (std::shared_ptr<UTrackPoint> pnt : mPoints) {
+        if (pnt->IsCurve()) {
+            mCurvePointCount++;
+        }
 
+        pnt->UpdateArgument();
+    }
+}
+
+void UTracks::UTrack::SaveNodePoints(std::filesystem::path dirName) {
+    std::filesystem::path gamePath(mGameFilename);
+    std::filesystem::path extPath = dirName / gamePath.filename();
+
+    PreprocessNodes();
+
+    std::stringstream stream;
+    stream.precision(2);
+    stream << std::fixed;
+
+    stream << mPoints.size() << " " << mCurvePointCount << " " << (bOpen ? "open" : "close") << std::endl;
+
+    for (std::shared_ptr<UTrackPoint> pnt : mPoints) {
+        pnt->SavePoint(stream);
+    }
+
+    std::ofstream writer(extPath.c_str());
+    writer << stream.str();
+    writer.close();
 }

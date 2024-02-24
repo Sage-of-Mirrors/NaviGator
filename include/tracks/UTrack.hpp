@@ -20,7 +20,10 @@ namespace UTracks {
         // DAT info
 
         bool bOpen;
+        uint32_t mCurvePointCount;
         shared_vector<UTrackPoint> mPoints;
+
+        void PreprocessNodes();
 
     public:
         UTrack();

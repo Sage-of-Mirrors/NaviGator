@@ -144,16 +144,17 @@ void ATrackContext::LoadTracks(std::filesystem::path filePath) {
 void ATrackContext::SaveTracks(std::filesystem::path dirPath) {
     std::filesystem::path fullConfigPath = dirPath / TRACKS_FILE_NAME;
     pugi::xml_document doc;
+    doc.document_element().append_attribute("encoding").set_value("UTF-8");
 
     pugi::xml_node rootNode = doc.append_child(TRACKS_CHILD_NAME);
     rootNode.append_attribute("version").set_value("1");
 
     for (std::shared_ptr<UTracks::UTrack> track : mTracks) {
         track->Serialize(rootNode.append_child("train_track"));
+        track->SaveNodePoints(dirPath);
     }
 
-    //pugi::xml_writer_file()
-    //doc.s
+    doc.save_file(fullConfigPath.c_str(), PUGIXML_TEXT("\t"), pugi::format_indent | pugi::format_indent_attributes | pugi::format_save_file_text, pugi::encoding_utf8);
 }
 
 void ATrackContext::Render(ASceneCamera& camera) {

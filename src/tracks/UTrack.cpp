@@ -38,12 +38,13 @@ void UTracks::UTrack::Serialize(pugi::xml_node& node) {
     brakingDistAttribute.set_value(mBrakingDist);
 }
 
-bool UTracks::UTrack::LoadNodePoints(std::filesystem::path dirName) {
+shared_vector<UTracks::UTrackPoint> UTracks::UTrack::LoadNodePoints(std::filesystem::path dirName) {
     std::filesystem::path gamePath(mGameFilename);
     std::filesystem::path extPath = dirName / gamePath.filename();
 
+    shared_vector<UTracks::UTrackPoint> points;
     if (!std::filesystem::exists(extPath)) {
-        return false;
+        return points;
     }
 
     std::ifstream nodesFile(extPath.c_str());
@@ -72,8 +73,10 @@ bool UTracks::UTrack::LoadNodePoints(std::filesystem::path dirName) {
         pt->LoadPoint(stream);
         pt->SetParentTrackName(mConfigName);
 
-        mPoints.push_back(pt);
+        points.push_back(pt);
     }
+
+    return points;
 }
 
 void UTracks::UTrack::PreprocessNodes() {

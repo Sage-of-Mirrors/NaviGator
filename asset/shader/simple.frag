@@ -8,6 +8,8 @@ layout (std140, binding=0) uniform uSharedData {
   mat4 mModel;
 };
 
+uniform vec4 uBaseColor = vec4(0.0, 0.0, 0.0, 1.0);
+
 void main() {
-  oPixelColor = vec4(1.0, 0.0, 0.0, 1.0);
+  oPixelColor = uBaseColor;
 }

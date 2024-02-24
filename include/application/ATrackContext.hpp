@@ -5,13 +5,17 @@
 
 namespace UTracks {
     class UTrack;
+    class UTrackPoint;
 }
 
 class ATrackContext {
     shared_vector<UTracks::UTrack> mTracks;
 
+    using points_vector = std::vector<shared_vector<UTracks::UTrackPoint>>;
+    points_vector mTrackPoints;
+
     bool bGLInitialized;
-    uint32_t mPntVBO, mPntIBO, mPntVAO, mSimpleProgram;
+    uint32_t mPntVBO, mPntIBO, mPntVAO, mSimpleProgram, mBaseColorUniform;
 
     void InitSimpleShader();
     void DestroyGLResources();

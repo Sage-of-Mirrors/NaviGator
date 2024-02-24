@@ -47,6 +47,8 @@ namespace UTracks {
         void UpdateArgument();
 
         const glm::vec3& GetPosition() const { return mPosition; }
+        const glm::vec3& GetHandleA() const { return mHandleA; }
+        const glm::vec3& GetHandleB() const { return mHandleB; }
         const std::string& GetParentTrackName() const { return mParentTrackName; }
 
         void SetParentTrackName(std::string name) { mParentTrackName = name; }

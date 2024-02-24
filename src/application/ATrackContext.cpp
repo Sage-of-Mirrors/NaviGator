@@ -15,7 +15,11 @@ constexpr char* TRACKS_FILE_NAME = "traintracks.xml";
 
 constexpr uint32_t VERTEX_ATTRIB_INDEX = 0;
 
-ATrackContext::ATrackContext() : mPntVBO(0), mPntIBO(0), mPntVAO(0), mSimpleProgram(0), bGLInitialized(false) {
+constexpr glm::vec4 NORMAL_COLOR = { 1.0f, 0.5f, 0.5f, 1.0f };
+constexpr glm::vec4 CURVE_COLOR = { 0.5f, 1.0f, 0.5f, 1.0f };
+constexpr glm::vec4 HANDLE_COLOR = { 0.5f, 0.5f, 1.0f, 1.0f };
+
+ATrackContext::ATrackContext() : mPntVBO(0), mPntIBO(0), mPntVAO(0), mSimpleProgram(0), bGLInitialized(false), mBaseColorUniform(0) {
 
 }
 
@@ -105,6 +109,7 @@ void ATrackContext::InitSimpleShader() {
     glDeleteShader(fragHandle);
 
     UCommonUniformBuffer::LinkShaderToUBO(mSimpleProgram);
+    mBaseColorUniform = glGetUniformLocation(mSimpleProgram, "uBaseColor");
 }
 
 void ATrackContext::DestroyGLResources() {
@@ -135,9 +140,9 @@ void ATrackContext::LoadTracks(std::filesystem::path filePath) {
     for (pugi::xml_node trackNode : doc.child(TRACKS_CHILD_NAME)) {
         std::shared_ptr<UTracks::UTrack> track = std::make_shared<UTracks::UTrack>();
         track->Deserialize(trackNode);
-        track->LoadNodePoints(configDir);
-
         mTracks.push_back(track);
+
+        mTrackPoints.push_back(track->LoadNodePoints(configDir));
     }
 }
 
@@ -177,12 +182,33 @@ void ATrackContext::Render(ASceneCamera& camera) {
 
     glUseProgram(mSimpleProgram);
 
-    for (std::shared_ptr<UTracks::UTrack> track : mTracks) {
-        for (const std::shared_ptr<UTracks::UTrackPoint> pnt : track->GetPoints()) {
+    for (shared_vector<UTracks::UTrackPoint> trackPoints : mTrackPoints) {
+        for (const std::shared_ptr<UTracks::UTrackPoint> pnt : trackPoints) {
+            if (pnt->IsCurve()) {
+                glUniform4fv(mBaseColorUniform, 1, &CURVE_COLOR.x);
+            }
+            else {
+                glUniform4fv(mBaseColorUniform, 1, &NORMAL_COLOR.x);
+            }
+
             UCommonUniformBuffer::SetModelMatrix(glm::translate(glm::identity<glm::mat4>(), pnt->GetPosition()));
             UCommonUniformBuffer::SubmitUBO();
 
             glDrawElements(GL_TRIANGLES, USphere::IndexCount, GL_UNSIGNED_INT, 0);
+
+            if (pnt->IsCurve()) {
+                glUniform4fv(mBaseColorUniform, 1, &HANDLE_COLOR.x);
+
+                UCommonUniformBuffer::SetModelMatrix(glm::scale(glm::translate(glm::identity<glm::mat4>(), pnt->GetHandleA()), glm::vec3(0.5f, 0.5f, 0.5f)));
+                UCommonUniformBuffer::SubmitUBO();
+
+                glDrawElements(GL_TRIANGLES, USphere::IndexCount, GL_UNSIGNED_INT, 0);
+
+                UCommonUniformBuffer::SetModelMatrix(glm::scale(glm::translate(glm::identity<glm::mat4>(), pnt->GetHandleB()), glm::vec3(0.5f, 0.5f, 0.5f)));
+                UCommonUniformBuffer::SubmitUBO();
+
+                glDrawElements(GL_TRIANGLES, USphere::IndexCount, GL_UNSIGNED_INT, 0);
+            }
         }
     }
 

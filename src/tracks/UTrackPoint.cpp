@@ -19,13 +19,6 @@ void UTracks::UTrackPoint::LoadPoint(std::stringstream& stream) {
         bIsCurve = true;
 
         std::getline(stream, token, ' ');
-        mHandleA.x = std::stof(token.data());
-        std::getline(stream, token, ' ');
-        mHandleA.y = std::stof(token.data());
-        std::getline(stream, token, ' ');
-        mHandleA.z = std::stof(token.data());
-
-        std::getline(stream, token, ' ');
         mPosition.x = std::stof(token.data());
         std::getline(stream, token, ' ');
         mPosition.y = std::stof(token.data());
@@ -33,11 +26,22 @@ void UTracks::UTrackPoint::LoadPoint(std::stringstream& stream) {
         mPosition.z = std::stof(token.data());
 
         std::getline(stream, token, ' ');
+        mHandleA.x = std::stof(token.data());
+        std::getline(stream, token, ' ');
+        mHandleA.y = std::stof(token.data());
+        std::getline(stream, token, ' ');
+        mHandleA.z = std::stof(token.data());
+
+        std::getline(stream, token, ' ');
         mHandleB.x = std::stof(token.data());
         std::getline(stream, token, ' ');
         mHandleB.y = std::stof(token.data());
         std::getline(stream, token, ' ');
         mHandleB.z = std::stof(token.data());
+
+        float yTmp = mPosition.y;
+        mPosition.y = mPosition.z;
+        mPosition.z = -yTmp;
 
         float yTmp = mHandleA.y;
         mHandleA.y = mHandleA.z;
@@ -53,11 +57,14 @@ void UTracks::UTrackPoint::LoadPoint(std::stringstream& stream) {
         mPosition.y = std::stof(token.data());
         std::getline(stream, token, ' ');
         mPosition.z = std::stof(token.data());
-    }
 
-    float yTmp = mPosition.y;
-    mPosition.y = mPosition.z;
-    mPosition.z = -yTmp;
+        float yTmp = mPosition.y;
+        mPosition.y = mPosition.z;
+        mPosition.z = -yTmp;
+
+        mHandleA = mPosition;
+        mHandleB = mPosition;
+    }
 
     std::getline(stream, token, ' ');
     mSomeScalar = std::stof(token.data());
@@ -76,8 +83,8 @@ void UTracks::UTrackPoint::LoadPoint(std::stringstream& stream) {
 void UTracks::UTrackPoint::SavePoint(std::stringstream& stream) {
     if (bIsCurve) {
         stream << "c ";
-        stream << mHandleA.x  << " " << -mHandleA.z  << " " << mHandleA.y  << " ";
         stream << mPosition.x << " " << -mPosition.z << " " << mPosition.y << " ";
+        stream << mHandleA.x  << " " << -mHandleA.z  << " " << mHandleA.y  << " ";
         stream << mHandleB.x  << " " << -mHandleB.z  << " " << mHandleB.y  << " ";
     }
     else {

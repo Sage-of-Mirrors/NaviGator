@@ -32,7 +32,7 @@ namespace UTracks {
         void Deserialize(pugi::xml_node& node);
         void Serialize(pugi::xml_node& node);
 
-        bool LoadNodePoints(std::filesystem::path dirName);
+        shared_vector<UTracks::UTrackPoint> LoadNodePoints(std::filesystem::path dirName);
         void SaveNodePoints(std::filesystem::path dirName);
 
         const shared_vector<UTrackPoint> const GetPoints() { return mPoints; }

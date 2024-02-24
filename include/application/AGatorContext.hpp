@@ -4,6 +4,7 @@
 
 class UViewport;
 class ANavContext;
+class ATrackContext;
 
 class AGatorContext {
     glm::vec2 mAppPosition;
@@ -18,6 +19,7 @@ class AGatorContext {
     std::shared_ptr<UViewport> mMainViewport;
 
     std::shared_ptr<ANavContext> mNavContext;
+    std::shared_ptr<ATrackContext> mTrackContext;
 
     void LoadFileCB();
 

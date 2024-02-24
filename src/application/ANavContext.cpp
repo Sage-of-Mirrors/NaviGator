@@ -98,7 +98,8 @@ ANavContext::ANavContext() : mLitSimpleProgram(0) {
 }
 
 ANavContext::~ANavContext() {
-
+    glDeleteProgram(mLitSimpleProgram);
+    mLitSimpleProgram = 0;
 }
 
 void ANavContext::LoadNavmesh(std::filesystem::path filePath) {
@@ -116,8 +117,6 @@ void ANavContext::Render(ASceneCamera& camera) {
     UCommonUniformBuffer::SetProjAndViewMatrices(camera.GetProjectionMatrix(), camera.GetViewMatrix());
     UCommonUniformBuffer::SetModelMatrix(glm::identity<glm::mat4>());
     UCommonUniformBuffer::SubmitUBO();
-
-    f += 0.166666f;
 
     ULitSimpleUniformBuffer::SetLight(glm::vec4(0.0f, 10000.0f, 0.0f, 1.0f), glm::vec4(0.75f, 0.75f, 0.75f, 1.0f), 1.0f, 0.0f);
     ULitSimpleUniformBuffer::SetViewPos(glm::vec4(camera.GetPosition(), 1.0f));

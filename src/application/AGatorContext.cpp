@@ -1,6 +1,8 @@
 #include "application/AGatorContext.hpp"
 #include "application/AInput.hpp"
+
 #include "application/ANavContext.hpp"
+#include "application/ATrackContext.hpp"
 
 #include "ui/UViewport.hpp"
 
@@ -13,7 +15,7 @@
 
 AGatorContext::AGatorContext() : bIsDockingConfigured(false), mMainDockSpaceID(UINT32_MAX), mDockNodeTopID(UINT32_MAX),
 	mDockNodeRightID(UINT32_MAX), mDockNodeDownID(UINT32_MAX), mDockNodeLeftID(UINT32_MAX), mAppPosition({ 0, 0 }),
-	mNavContext(std::make_shared<ANavContext>())
+	mNavContext(std::make_shared<ANavContext>()), mTrackContext(std::make_shared<ATrackContext>())
 {
 
 }
@@ -91,6 +93,7 @@ void AGatorContext::Render(float deltaTime) {
 void AGatorContext::PostRender(float deltaTime) {
 	mMainViewport->BindViewport();
 	mNavContext->Render(mMainViewport->GetCamera());
+	mTrackContext->Render(mMainViewport->GetCamera());
 	mMainViewport->UnbindViewport();
 }
 
@@ -105,6 +108,12 @@ void AGatorContext::OpenFile(std::filesystem::path filePath) {
 
 	if (filePath.extension() == ".ynv") {
 		mNavContext->LoadNavmesh(filePath);
+	}
+	else if (filePath.extension() == ".xml") {
+		if (filePath.stem() == "traintracks") {
+			mTrackContext->InitGLResources();
+			mTrackContext->LoadTracks(filePath);
+		}
 	}
 }
 

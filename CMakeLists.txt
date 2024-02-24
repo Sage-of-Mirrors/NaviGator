@@ -24,6 +24,11 @@ file(GLOB NAVIGATOR_SRC
 
     "src/ubo/*.cpp"
     "include/ubo/*.hpp"
+
+    "src/tracks/*.cpp"
+    "include/tracks/*.hpp"
+
+    "include/primitives/*.hpp"
     
     # glad
     "lib/glad/src/*.c"
@@ -36,5 +41,5 @@ add_executable(navigator ${NAVIGATOR_SRC})
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/asset DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
-target_include_directories(navigator PUBLIC include lib/glad/include lib/glm lib/ImGuiFileDialog lib/librdr3/include lib/Recast/include)
-target_link_libraries(navigator PUBLIC glm imgui glfw librdr3 Recast)
+target_include_directories(navigator PUBLIC include lib/glad/include lib/glm lib/ImGuiFileDialog lib/librdr3/include lib/Recast/include lib/pugixml/src)
+target_link_libraries(navigator PUBLIC glm imgui glfw librdr3 Recast pugixml)

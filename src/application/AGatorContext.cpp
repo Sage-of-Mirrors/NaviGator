@@ -11,6 +11,7 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <ImGuiFileDialog.h>
+#include "util/ImGuizmo.hpp"
 
 
 AGatorContext::AGatorContext() : bIsDockingConfigured(false), mMainDockSpaceID(UINT32_MAX), mDockNodeTopID(UINT32_MAX),
@@ -46,6 +47,7 @@ void AGatorContext::SetUpDocking() {
 		ImGui::DockBuilderDockWindow("Properties", mPropertiesPanelTopID);
 		ImGui::DockBuilderDockWindow("Data Editor", mPropertiesPanelBottomID);
 		ImGui::DockBuilderDockWindow("Main Viewport", mMainDockSpaceID);
+		ImGui::DockBuilderDockWindow("gizmo", mMainDockSpaceID);
 
 		ImGui::DockBuilderFinish(mMainDockSpaceID);
 
@@ -109,7 +111,12 @@ void AGatorContext::Render(float deltaTime) {
 	RenderMenuBar();
 	RenderPropertiesPanel();
 
+	glm::vec2 viewportSize = mMainViewport->GetViewportSize();
+	glm::vec2 viewportPos = mMainViewport->GetViewportPosition() + mAppPosition;
+	ImGuizmo::SetRect(viewportPos.x, viewportPos.y, viewportSize.x, viewportSize.y);
+
 	mMainViewport->RenderUI(deltaTime);
+	mTrackContext->RenderUI(mMainViewport->GetCamera());
 
 	// Render open file dialog
 	if (ImGuiFileDialog::Instance()->Display("loadFileDialog", 32, { 800, 600 })) {
@@ -123,8 +130,10 @@ void AGatorContext::Render(float deltaTime) {
 
 void AGatorContext::PostRender(float deltaTime) {
 	mMainViewport->BindViewport();
+
 	mNavContext->Render(mMainViewport->GetCamera());
 	mTrackContext->Render(mMainViewport->GetCamera());
+
 	mMainViewport->UnbindViewport();
 }
 

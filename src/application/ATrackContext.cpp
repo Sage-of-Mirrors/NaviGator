@@ -10,6 +10,7 @@
 #include <pugixml.hpp>
 #include <glad/glad.h>
 #include <imgui.h>
+#include "util/ImGuizmo.hpp"
 
 #include <iostream>
 #include <algorithm>
@@ -193,7 +194,7 @@ void ATrackContext::RenderTreeView() {
             std::shared_ptr<UTracks::UTrack> track = mTracks[i];
 
             bool isSelected = !mSelectedTrack.expired() && mSelectedTrack.lock() == track;
-            std::string imguiId = std::format("{}##{}", track->GetConfigName(), i);
+            std::string imguiId = track->GetConfigName(); // std::format("{}##{}", track->GetConfigName(), i);
             
             if (ImGui::Selectable(imguiId.c_str(), isSelected)) {
                 mSelectedTrack = track;
@@ -273,6 +274,21 @@ void ATrackContext::RenderPointDataEditorMulti() {
         ImGui::Text("Editing of multiple track nodes at once\nis currently not supported.");
 
         ImGui::Unindent();
+    }
+}
+
+void ATrackContext::RenderUI(ASceneCamera& camera) {
+    if (mTracks.size() == 0) {
+        return;
+    }
+
+    glm::mat4 projMtx = camera.GetProjectionMatrix();
+    glm::mat4 viewMtx = camera.GetViewMatrix();
+
+    std::shared_ptr<UTracks::UTrackPoint> lockedPt = mSelectedPoints[0].lock();
+    glm::mat4 testMtx = glm::translate(glm::identity<glm::mat4>(), lockedPt->GetPosition());
+    if (ImGuizmo::Manipulate(&viewMtx[0][0], &projMtx[0][0], ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::WORLD, &testMtx[0][0])) {
+        lockedPt->GetPositionForEditor() = glm::vec3(testMtx[3]);
     }
 }
 

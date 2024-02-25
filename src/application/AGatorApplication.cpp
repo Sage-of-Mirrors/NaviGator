@@ -9,6 +9,8 @@
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_glfw.h>
 
+#include "util/ImGuizmo.hpp"
+
 #include <string>
 #include <iostream>
 #include <vector>
@@ -120,6 +122,7 @@ bool AGatorApplication::Execute(float deltaTime) {
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
+	ImGuizmo::BeginFrame();
 
 	// Update buffer size
 	int width, height;

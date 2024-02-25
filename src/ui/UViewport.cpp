@@ -3,6 +3,7 @@
 #include <glad/glad.h>
 #include <imgui.h>
 #include <imgui_internal.h>
+#include "util/ImGuizmo.hpp"
 
 #include <string>
 
@@ -76,7 +77,8 @@ void UViewport::RenderUI(float deltaTime) {
     window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoTabBar;
     ImGui::SetNextWindowClass(&window_class);
 
-    ImGui::Begin(name.c_str(), &bIsOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
+    ImGui::Begin(name.c_str(), &bIsOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove);
+    ImGuizmo::SetDrawlist();
 
     // This would normally be in an Update() function, but
     // the camera needs access to this ImGui window's input data.

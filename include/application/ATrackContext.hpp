@@ -35,6 +35,7 @@ public:
     void RenderTreeView();
     void RenderDataEditor();
     void Render(ASceneCamera& camera);
+    void RenderUI(ASceneCamera& camera);
 
     void LoadTracks(std::filesystem::path filePath);
     void SaveTracks(std::filesystem::path dirPath);

@@ -7,3 +7,6 @@
 [submodule "lib/pugixml"]
 	path = lib/pugixml
 	url = git@github.com:zeux/pugixml.git
+[submodule "lib/imguizmo"]
+	path = lib/imguizmo
+	url = git@github.com:CedricGuillemet/ImGuizmo.git

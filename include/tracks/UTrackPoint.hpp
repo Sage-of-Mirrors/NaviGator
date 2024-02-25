@@ -72,5 +72,6 @@ namespace UTracks {
         std::string* GetArgumentForEditor() { return &mArgument; }
         float* GetScalarForEditor() { return &mSomeScalar; }
         ENodeStationType& GetStationTypeForEditor() { return mStationType; }
+        glm::vec3& GetPositionForEditor() { return mPosition; }
     };
 }

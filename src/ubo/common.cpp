@@ -4,7 +4,7 @@
 
 namespace UCommonUniformBuffer {
     namespace {
-        constexpr char* UBO_NAME = "uSharedData";
+        constexpr const char* UBO_NAME = "uSharedData";
 
         struct UCommonUniformBufferObject {
             glm::mat4 mProj;

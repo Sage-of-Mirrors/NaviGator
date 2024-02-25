@@ -18,9 +18,14 @@ class ATrackContext {
     uint32_t mPntVBO, mPntIBO, mPntVAO, mSimpleProgram, mBaseColorUniform;
 
     std::weak_ptr<UTracks::UTrack> mSelectedTrack;
+    std::vector<std::weak_ptr<UTracks::UTrackPoint>> mSelectedPoints;
 
     void InitSimpleShader();
     void DestroyGLResources();
+
+    void RenderTrackDataEditor(std::shared_ptr<UTracks::UTrack> track);
+    void RenderPointDataEditorSingle(std::shared_ptr<UTracks::UTrackPoint> point);
+    void RenderPointDataEditorMulti();
 
 public:
     ATrackContext();

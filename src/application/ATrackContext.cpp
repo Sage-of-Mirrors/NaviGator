@@ -3,6 +3,7 @@
 #include "tracks/UTrackPoint.hpp"
 #include "ubo/common.hpp"
 #include "util/fileutil.hpp"
+#include "util/uiutil.hpp"
 
 #include "primitives/USphere.hpp"
 
@@ -12,9 +13,10 @@
 
 #include <iostream>
 #include <algorithm>
+#include <format>
 
-constexpr char* TRACKS_CHILD_NAME = "train_tracks";
-constexpr char* TRACKS_FILE_NAME = "traintracks.xml";
+constexpr const char* TRACKS_CHILD_NAME = "train_tracks";
+constexpr const char* TRACKS_FILE_NAME = "traintracks.xml";
 
 constexpr uint32_t VERTEX_ATTRIB_INDEX = 0;
 
@@ -169,7 +171,8 @@ void ATrackContext::SaveTracks(std::filesystem::path dirPath) {
     rootNode.append_attribute("version").set_value("1");
 
     for (std::shared_ptr<UTracks::UTrack> track : mTracks) {
-        track->Serialize(rootNode.append_child("train_track"));
+        pugi::xml_node trackNode = rootNode.append_child("train_track");
+        track->Serialize(trackNode);
         track->SaveNodePoints(dirPath);
     }
 
@@ -186,10 +189,13 @@ void ATrackContext::RenderTreeView() {
     if (ImGui::TreeNode("Track Configs")) {
         ImGui::Indent();
 
-        for (std::shared_ptr<UTracks::UTrack> track : mTracks) {
+        for (uint32_t i = 0; i < mTracks.size(); i++) {
+            std::shared_ptr<UTracks::UTrack> track = mTracks[i];
+
             bool isSelected = !mSelectedTrack.expired() && mSelectedTrack.lock() == track;
+            std::string imguiId = std::format("{}##{}", track->GetConfigName(), i);
             
-            if (ImGui::Selectable(track->GetConfigName().c_str(), isSelected)) {
+            if (ImGui::Selectable(imguiId.c_str(), isSelected)) {
                 mSelectedTrack = track;
             }
         }
@@ -199,11 +205,75 @@ void ATrackContext::RenderTreeView() {
 }
 
 void ATrackContext::RenderDataEditor() {
-    if (mTracks.size() == 0 || mSelectedTrack.expired()) {
-        return;
+    if (!mSelectedTrack.expired()) {
+        RenderTrackDataEditor(mSelectedTrack.lock());
+        ImGui::Spacing();
     }
 
-    mSelectedTrack.lock()->RenderDataEditor();
+    if (mSelectedPoints.size() == 1) {
+        RenderPointDataEditorSingle(mSelectedPoints[0].lock());
+    }
+    else if (mSelectedPoints.size() > 1) {
+        RenderPointDataEditorMulti();
+    }
+}
+
+void ATrackContext::RenderTrackDataEditor(std::shared_ptr<UTracks::UTrack> track) {
+    if (ImGui::CollapsingHeader("Selected Track Data", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Indent();
+
+        ImGui::Spacing();
+        UIUtil::RenderTextInput("Name", track->GetConfigNameForEditor(), 0);
+
+        ImGui::Spacing();
+        ImGui::InputScalar("Braking Distance", ImGuiDataType_U32, track->GetBrakingDistForEditor());
+
+        ImGui::Spacing();
+        ImGui::Checkbox("Loops?", track->GetLoopsForEditor());
+
+        ImGui::Spacing();
+        ImGui::Checkbox("Stops at stations?", track->GetStopsAtStationsForEditor());
+
+        ImGui::Unindent();
+    }
+}
+
+void ATrackContext::RenderPointDataEditorSingle(std::shared_ptr<UTracks::UTrackPoint> point) {
+    if (ImGui::CollapsingHeader("Selected Node Data", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Indent();
+
+        ImGui::Spacing();
+        UIUtil::RenderComboEnum<UTracks::ENodeStationType>("Station Type", point->GetStationTypeForEditor());
+
+        ImGui::Spacing();
+
+        // Only nodes with station type None can be junctions, so show UI for one or the other.
+        if (point->GetStationType() == UTracks::ENodeStationType::None) {
+            // TODO: junction selection UI
+            ImGui::Text("TODO: Junction selection UI");
+        }
+        else {
+            UIUtil::RenderTextInput("Station Name", point->GetArgumentForEditor(), 0);
+        }
+
+        ImGui::Spacing();
+        ImGui::InputFloat("Unknown Float", point->GetScalarForEditor());
+
+        ImGui::Spacing();
+        ImGui::Checkbox("Is in a tunnel?", point->GetIsTunnelForEditor());
+
+        ImGui::Unindent();
+    }
+}
+
+void ATrackContext::RenderPointDataEditorMulti() {
+    if (ImGui::CollapsingHeader("Selected Node Data", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Indent();
+
+        ImGui::Text("Editing of multiple track nodes at once\nis currently not supported.");
+
+        ImGui::Unindent();
+    }
 }
 
 void ATrackContext::Render(ASceneCamera& camera) {

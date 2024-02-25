@@ -43,11 +43,8 @@ void AGatorContext::SetUpDocking() {
 
 		mPropertiesPanelTopID = ImGui::DockBuilderSplitNode(mPropertiesDockNodeID, ImGuiDir_Up, 0.5f, nullptr, &mPropertiesPanelBottomID);
 
-		ImGui::DockBuilderDockWindow("SecondaryMenuBar", mDockNodeTopID);
-
 		ImGui::DockBuilderDockWindow("Properties", mPropertiesPanelTopID);
 		ImGui::DockBuilderDockWindow("Data Editor", mPropertiesPanelBottomID);
-
 		ImGui::DockBuilderDockWindow("Main Viewport", mMainDockSpaceID);
 
 		ImGui::DockBuilderFinish(mMainDockSpaceID);
@@ -62,7 +59,12 @@ void AGatorContext::RenderMenuBar() {
 			if (ImGui::MenuItem("Open...")) {
 				LoadFileCB();
 			}
-			if (ImGui::MenuItem("Save...")) {
+			if (ImGui::BeginMenu("Save")) {
+				if (ImGui::MenuItem("Track Data")) {
+
+				}
+
+				ImGui::EndMenu();
 			}
 
 			ImGui::Separator();
@@ -110,7 +112,7 @@ void AGatorContext::Render(float deltaTime) {
 	mMainViewport->RenderUI(deltaTime);
 
 	// Render open file dialog
-	if (ImGuiFileDialog::Instance()->Display("loadFileDialog")) {
+	if (ImGuiFileDialog::Instance()->Display("loadFileDialog", 32, { 800, 600 })) {
 		if (ImGuiFileDialog::Instance()->IsOk()) {
 			OpenFile(ImGuiFileDialog::Instance()->GetFilePathName());
 		}

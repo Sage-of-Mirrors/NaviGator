@@ -1,9 +1,14 @@
 #include "tracks/UTrackPoint.hpp"
+#include "util/uiutil.hpp"
+
+#include <imgui.h>
+#include <magic_enum.hpp>
 
 #include <iostream>
+#include <array>
 
 UTracks::UTrackPoint::UTrackPoint() : mPosition(glm::zero<glm::vec3>()), mHandleA(glm::zero<glm::vec3>()),
-    mHandleB(glm::zero<glm::vec3>()), mSomeScalar(0.0f), mStationType(0), bIsTunnel(false), bIsJunction(false),
+    mHandleB(glm::zero<glm::vec3>()), mSomeScalar(0.0f), mStationType(ENodeStationType::None), bIsTunnel(false), bIsJunction(false),
     bIsCurve(false)
 {
 
@@ -72,7 +77,7 @@ void UTracks::UTrackPoint::LoadPoint(std::stringstream& stream) {
     mSomeScalar = std::stof(token.data());
 
     uint8_t infoBits = stream.get() - 0x30; // Subtract the value of the char '0' to get the actual value.
-    mStationType =  infoBits & ENodeInfoBits::BITS_STATION_TYPE;
+    mStationType =  ENodeStationType(infoBits & ENodeInfoBits::BITS_STATION_TYPE);
     bIsTunnel    = (infoBits & ENodeInfoBits::BITS_IS_TUNNEL)   >> 2;
     bIsJunction  = (infoBits & ENodeInfoBits::BITS_IS_JUNCTION) >> 3;
 

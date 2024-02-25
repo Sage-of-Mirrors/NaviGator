@@ -11,7 +11,7 @@ namespace UTracks {
         BITS_IS_JUNCTION    = 0x08
     };
 
-    enum ENodeStationType {
+    enum ENodeStationType : uint8_t {
         None,
         Left_Side,
         Right_Side
@@ -24,7 +24,7 @@ namespace UTracks {
         glm::vec3 mPosition;
         // What kind of station this node represents - can be None, a station on the train's left side,
         // or a station on the train's right side.
-        uint8_t mStationType;
+        ENodeStationType mStationType;
         // Whether this node is inside of a tunnel.
         bool bIsTunnel;
         // Whether this node can act as a junction to another track config.
@@ -60,10 +60,17 @@ namespace UTracks {
         const glm::vec3& GetHandleA() const { return mHandleA; }
         const glm::vec3& GetHandleB() const { return mHandleB; }
         const std::string& GetParentTrackName() const { return mParentTrackName; }
+        const ENodeStationType& GetStationType() const { return mStationType; }
 
         void SetParentTrackName(std::string name) { mParentTrackName = name; }
 
         bool IsCurve() const { return bIsCurve; }
         bool IsJunction() const { return bIsJunction; }
+
+        bool* GetIsTunnelForEditor() { return &bIsTunnel; }
+        bool* GetIsJunctionForEditor() { return &bIsJunction; }
+        std::string* GetArgumentForEditor() { return &mArgument; }
+        float* GetScalarForEditor() { return &mSomeScalar; }
+        ENodeStationType& GetStationTypeForEditor() { return mStationType; }
     };
 }

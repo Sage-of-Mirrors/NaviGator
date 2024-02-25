@@ -36,8 +36,12 @@ namespace UTracks {
         void SaveNodePoints(std::filesystem::path dirName);
 
         const std::string GetConfigName() const { return mConfigName; }
-        const shared_vector<UTrackPoint> const GetPoints() { return mPoints; }
 
-        void RenderDataEditor();
+        std::string* GetConfigNameForEditor() { return &mConfigName; }
+        bool* GetStopsAtStationsForEditor() { return &bStopsAtStations; }
+        bool* GetLoopsForEditor() { return &bLoops; }
+        uint32_t* GetBrakingDistForEditor() { return &mBrakingDist; }
+
+        const shared_vector<UTrackPoint> GetPoints() const { return mPoints; }
     };
 }

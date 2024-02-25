@@ -7,3 +7,6 @@
 [submodule "lib/pugixml"]
 	path = lib/pugixml
 	url = git@github.com:zeux/pugixml.git
+[submodule "lib/magic_enum"]
+	path = lib/magic_enum
+	url = git@github.com:Neargye/magic_enum.git

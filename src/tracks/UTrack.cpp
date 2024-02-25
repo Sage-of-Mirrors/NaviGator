@@ -110,23 +110,3 @@ void UTracks::UTrack::SaveNodePoints(std::filesystem::path dirName) {
     writer << stream.str();
     writer.close();
 }
-
-void UTracks::UTrack::RenderDataEditor() {
-    if (ImGui::CollapsingHeader("Selected Track Data", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::Indent();
-
-        ImGui::Spacing();
-        ImGui::InputText("Name###configNameField", mConfigName.data(), mConfigName.size());
-        
-        ImGui::Spacing();
-        ImGui::InputScalar("Braking Distance", ImGuiDataType_U32, &mBrakingDist);
-        
-        ImGui::Spacing();
-        ImGui::Checkbox("Loops?", &bLoops);
-        
-        ImGui::Spacing();
-        ImGui::Checkbox("Stops at stations?", &bStopsAtStations);
-
-        ImGui::Unindent();
-    }
-}

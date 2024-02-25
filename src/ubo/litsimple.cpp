@@ -4,7 +4,7 @@
 
 namespace ULitSimpleUniformBuffer {
     namespace {
-        constexpr char* UBO_NAME = "uLitSimpleData";
+        constexpr const char* UBO_NAME = "uLitSimpleData";
 
         struct ULitSimpleUniformBufferObject {
             ULight mLight;

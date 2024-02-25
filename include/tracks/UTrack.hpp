@@ -19,7 +19,7 @@ namespace UTracks {
 
         // DAT info
 
-        bool bOpen;
+        bool bLoops;
         uint32_t mCurvePointCount;
         shared_vector<UTrackPoint> mPoints;
 
@@ -35,6 +35,9 @@ namespace UTracks {
         shared_vector<UTracks::UTrackPoint> LoadNodePoints(std::filesystem::path dirName);
         void SaveNodePoints(std::filesystem::path dirName);
 
+        const std::string GetConfigName() const { return mConfigName; }
         const shared_vector<UTrackPoint> const GetPoints() { return mPoints; }
+
+        void RenderDataEditor();
     };
 }

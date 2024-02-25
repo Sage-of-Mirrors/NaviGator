@@ -2,6 +2,7 @@
 
 #include <glad/glad.h>
 #include <imgui.h>
+#include <imgui_internal.h>
 
 #include <string>
 
@@ -71,7 +72,11 @@ void UViewport::RenderUI(float deltaTime) {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0.0f, 0.0f });
 
 // Window begin
-    ImGui::Begin(name.c_str(), &bIsOpen, ImGuiWindowFlags_NoTitleBar);
+    ImGuiWindowClass window_class;
+    window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoTabBar;
+    ImGui::SetNextWindowClass(&window_class);
+
+    ImGui::Begin(name.c_str(), &bIsOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
 
     // This would normally be in an Update() function, but
     // the camera needs access to this ImGui window's input data.

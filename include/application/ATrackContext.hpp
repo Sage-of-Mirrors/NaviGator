@@ -17,6 +17,8 @@ class ATrackContext {
     bool bGLInitialized;
     uint32_t mPntVBO, mPntIBO, mPntVAO, mSimpleProgram, mBaseColorUniform;
 
+    std::weak_ptr<UTracks::UTrack> mSelectedTrack;
+
     void InitSimpleShader();
     void DestroyGLResources();
 
@@ -25,6 +27,8 @@ public:
     ~ATrackContext();
 
     void InitGLResources();
+    void RenderTreeView();
+    void RenderDataEditor();
     void Render(ASceneCamera& camera);
 
     void LoadTracks(std::filesystem::path filePath);

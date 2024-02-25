@@ -14,8 +14,9 @@
 
 
 AGatorContext::AGatorContext() : bIsDockingConfigured(false), mMainDockSpaceID(UINT32_MAX), mDockNodeTopID(UINT32_MAX),
-	mDockNodeRightID(UINT32_MAX), mDockNodeDownID(UINT32_MAX), mDockNodeLeftID(UINT32_MAX), mAppPosition({ 0, 0 }),
-	mNavContext(std::make_shared<ANavContext>()), mTrackContext(std::make_shared<ATrackContext>())
+	mDockNodeRightID(UINT32_MAX), mDockNodeDownID(UINT32_MAX), mPropertiesDockNodeID(UINT32_MAX), mAppPosition({ 0, 0 }),
+	mNavContext(std::make_shared<ANavContext>()), mTrackContext(std::make_shared<ATrackContext>()), mPropertiesPanelTopID(UINT32_MAX),
+	mPropertiesPanelBottomID(UINT32_MAX)
 {
 
 }
@@ -38,7 +39,14 @@ void AGatorContext::SetUpDocking() {
 		mDockNodeTopID = ImGui::DockBuilderSplitNode(mMainDockSpaceID, ImGuiDir_Up, 0.5f, nullptr, &mMainDockSpaceID);
 		mDockNodeRightID = ImGui::DockBuilderSplitNode(mMainDockSpaceID, ImGuiDir_Right, 0.5f, nullptr, &mMainDockSpaceID);
 		mDockNodeDownID = ImGui::DockBuilderSplitNode(mMainDockSpaceID, ImGuiDir_Down, 0.5f, nullptr, &mMainDockSpaceID);
-		mDockNodeLeftID = ImGui::DockBuilderSplitNode(mMainDockSpaceID, ImGuiDir_Left, 0.5f, nullptr, &mMainDockSpaceID);
+		mPropertiesDockNodeID = ImGui::DockBuilderSplitNode(mMainDockSpaceID, ImGuiDir_Left, 0.5f, nullptr, &mMainDockSpaceID);
+
+		mPropertiesPanelTopID = ImGui::DockBuilderSplitNode(mPropertiesDockNodeID, ImGuiDir_Up, 0.5f, nullptr, &mPropertiesPanelBottomID);
+
+		ImGui::DockBuilderDockWindow("SecondaryMenuBar", mDockNodeTopID);
+
+		ImGui::DockBuilderDockWindow("Properties", mPropertiesPanelTopID);
+		ImGui::DockBuilderDockWindow("Data Editor", mPropertiesPanelBottomID);
 
 		ImGui::DockBuilderDockWindow("Main Viewport", mMainDockSpaceID);
 
@@ -49,34 +57,55 @@ void AGatorContext::SetUpDocking() {
 }
 
 void AGatorContext::RenderMenuBar() {
-	ImGui::BeginMainMenuBar();
+	if (ImGui::BeginMainMenuBar()) {
+		if (ImGui::BeginMenu("File")) {
+			if (ImGui::MenuItem("Open...")) {
+				LoadFileCB();
+			}
+			if (ImGui::MenuItem("Save...")) {
+			}
 
-	if (ImGui::BeginMenu("File")) {
-		if (ImGui::MenuItem("Open...")) {
-			LoadFileCB();
+			ImGui::Separator();
+			ImGui::MenuItem("Close");
+
+			ImGui::EndMenu();
 		}
-		if (ImGui::MenuItem("Save...")) {
+		if (ImGui::BeginMenu("About")) {
+			ImGui::EndMenu();
 		}
 
-		ImGui::Separator();
-		ImGui::MenuItem("Close");
-
-		ImGui::EndMenu();
+		ImGui::EndMainMenuBar();
 	}
-	if (ImGui::BeginMenu("About")) {
-		ImGui::EndMenu();
-	}
-
-	ImGui::EndMainMenuBar();
 }
 
 void AGatorContext::Update(float deltaTime) {
 
 }
 
+void AGatorContext::RenderPropertiesPanel() {
+	ImGuiWindowClass window_class;
+	window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoTabBar;
+
+	ImGui::SetNextWindowClass(&window_class);
+	ImGui::Begin("Properties", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
+
+	mTrackContext->RenderTreeView();
+	
+	ImGui::End();
+
+	ImGui::SetNextWindowClass(&window_class);
+	ImGui::Begin("Data Editor", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
+	
+	mTrackContext->RenderDataEditor();
+
+	ImGui::End();
+}
+
 void AGatorContext::Render(float deltaTime) {
 	SetUpDocking();
+
 	RenderMenuBar();
+	RenderPropertiesPanel();
 
 	mMainViewport->RenderUI(deltaTime);
 

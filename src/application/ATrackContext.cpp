@@ -8,7 +8,10 @@
 
 #include <pugixml.hpp>
 #include <glad/glad.h>
+#include <imgui.h>
+
 #include <iostream>
+#include <algorithm>
 
 constexpr char* TRACKS_CHILD_NAME = "train_tracks";
 constexpr char* TRACKS_FILE_NAME = "traintracks.xml";
@@ -20,7 +23,9 @@ constexpr glm::vec4 CURVE_COLOR = { 0.5f, 1.0f, 0.5f, 1.0f };
 constexpr glm::vec4 HANDLE_COLOR = { 0.5f, 0.5f, 1.0f, 1.0f };
 constexpr glm::vec4 JUNCTION_COLOR = { 1.0f, 0.5f, 1.0f, 1.0f };
 
-ATrackContext::ATrackContext() : mPntVBO(0), mPntIBO(0), mPntVAO(0), mSimpleProgram(0), bGLInitialized(false), mBaseColorUniform(0) {
+ATrackContext::ATrackContext() : mPntVBO(0), mPntIBO(0), mPntVAO(0), mSimpleProgram(0), bGLInitialized(false), mBaseColorUniform(0),
+    mSelectedTrack()
+{
 
 }
 
@@ -142,7 +147,15 @@ void ATrackContext::LoadTracks(std::filesystem::path filePath) {
         std::shared_ptr<UTracks::UTrack> track = std::make_shared<UTracks::UTrack>();
         track->Deserialize(trackNode);
         mTracks.push_back(track);
+    }
 
+    std::sort(mTracks.begin(), mTracks.end(),
+        [](std::shared_ptr<UTracks::UTrack> a, std::shared_ptr<UTracks::UTrack> b) {
+            return a->GetConfigName() < b->GetConfigName();
+        }
+    );
+
+    for (std::shared_ptr<UTracks::UTrack> track : mTracks) {
         mTrackPoints.push_back(track->LoadNodePoints(configDir));
     }
 }
@@ -161,6 +174,36 @@ void ATrackContext::SaveTracks(std::filesystem::path dirPath) {
     }
 
     doc.save_file(fullConfigPath.c_str(), PUGIXML_TEXT("\t"), pugi::format_indent | pugi::format_indent_attributes | pugi::format_save_file_text, pugi::encoding_utf8);
+}
+
+void ATrackContext::RenderTreeView() {
+    if (mTracks.size() == 0) {
+        ImGui::Text("Please load traintracks.xml.");
+        return;
+    }
+
+    ImGui::SetNextItemOpen(true);
+    if (ImGui::TreeNode("Track Configs")) {
+        ImGui::Indent();
+
+        for (std::shared_ptr<UTracks::UTrack> track : mTracks) {
+            bool isSelected = !mSelectedTrack.expired() && mSelectedTrack.lock() == track;
+            
+            if (ImGui::Selectable(track->GetConfigName().c_str(), isSelected)) {
+                mSelectedTrack = track;
+            }
+        }
+
+        ImGui::TreePop();
+    }
+}
+
+void ATrackContext::RenderDataEditor() {
+    if (mTracks.size() == 0 || mSelectedTrack.expired()) {
+        return;
+    }
+
+    mSelectedTrack.lock()->RenderDataEditor();
 }
 
 void ATrackContext::Render(ASceneCamera& camera) {

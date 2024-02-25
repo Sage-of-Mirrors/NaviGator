@@ -14,12 +14,17 @@ class AGatorContext {
     uint32_t mDockNodeTopID;
     uint32_t mDockNodeRightID;
     uint32_t mDockNodeDownID;
-    uint32_t mDockNodeLeftID;
+    uint32_t mPropertiesDockNodeID;
+
+    uint32_t mPropertiesPanelTopID;
+    uint32_t mPropertiesPanelBottomID;
 
     std::shared_ptr<UViewport> mMainViewport;
 
     std::shared_ptr<ANavContext> mNavContext;
     std::shared_ptr<ATrackContext> mTrackContext;
+
+    void RenderPropertiesPanel();
 
     void LoadFileCB();
 

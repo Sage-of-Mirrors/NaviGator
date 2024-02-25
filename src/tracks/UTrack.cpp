@@ -2,6 +2,7 @@
 #include "tracks/UTrackPoint.hpp"
 
 #include <pugixml.hpp>
+#include <imgui.h>
 
 #include <fstream>
 #include <sstream>
@@ -66,7 +67,7 @@ shared_vector<UTracks::UTrackPoint> UTracks::UTrack::LoadNodePoints(std::filesys
 
     // Open or closed loop?
     std::getline(stream, token, '\n');
-    bOpen = std::strcmp(token.data(), "open") == 0;
+    bLoops = std::strcmp(token.data(), "close") == 0;
 
     for (uint32_t i = 0; i < totalNodeCount; i++) {
         std::shared_ptr<UTrackPoint> pt = std::make_shared<UTrackPoint>();
@@ -99,7 +100,7 @@ void UTracks::UTrack::SaveNodePoints(std::filesystem::path dirName) {
     stream.precision(2);
     stream << std::fixed;
 
-    stream << mPoints.size() << " " << mCurvePointCount << " " << (bOpen ? "open" : "close") << std::endl;
+    stream << mPoints.size() << " " << mCurvePointCount << " " << (bLoops ? "close" : "open") << std::endl;
 
     for (std::shared_ptr<UTrackPoint> pnt : mPoints) {
         pnt->SavePoint(stream);
@@ -108,4 +109,24 @@ void UTracks::UTrack::SaveNodePoints(std::filesystem::path dirName) {
     std::ofstream writer(extPath.c_str());
     writer << stream.str();
     writer.close();
+}
+
+void UTracks::UTrack::RenderDataEditor() {
+    if (ImGui::CollapsingHeader("Selected Track Data", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Indent();
+
+        ImGui::Spacing();
+        ImGui::InputText("Name###configNameField", mConfigName.data(), mConfigName.size());
+        
+        ImGui::Spacing();
+        ImGui::InputScalar("Braking Distance", ImGuiDataType_U32, &mBrakingDist);
+        
+        ImGui::Spacing();
+        ImGui::Checkbox("Loops?", &bLoops);
+        
+        ImGui::Spacing();
+        ImGui::Checkbox("Stops at stations?", &bStopsAtStations);
+
+        ImGui::Unindent();
+    }
 }

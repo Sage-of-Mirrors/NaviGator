@@ -21,9 +21,8 @@ namespace UTracks {
 
         bool bLoops;
         uint32_t mCurvePointCount;
-        shared_vector<UTrackPoint> mPoints;
 
-        void PreprocessNodes();
+        void PreprocessNodes(shared_vector<UTrackPoint>& points);
 
     public:
         UTrack();
@@ -33,7 +32,7 @@ namespace UTracks {
         void Serialize(pugi::xml_node& node);
 
         shared_vector<UTracks::UTrackPoint> LoadNodePoints(std::filesystem::path dirName);
-        void SaveNodePoints(std::filesystem::path dirName);
+        void SaveNodePoints(std::filesystem::path dirName, shared_vector<UTrackPoint>& points);
 
         const std::string GetConfigName() const { return mConfigName; }
 
@@ -41,7 +40,5 @@ namespace UTracks {
         bool* GetStopsAtStationsForEditor() { return &bStopsAtStations; }
         bool* GetLoopsForEditor() { return &bLoops; }
         uint32_t* GetBrakingDistForEditor() { return &mBrakingDist; }
-
-        const shared_vector<UTrackPoint> GetPoints() const { return mPoints; }
     };
 }

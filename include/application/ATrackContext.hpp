@@ -8,6 +8,12 @@ namespace UTracks {
     class UTrackPoint;
 }
 
+enum ETrackNodePickType : uint8_t {
+    Position,
+    Handle_A,
+    Handle_B
+};
+
 class ATrackContext {
     shared_vector<UTracks::UTrack> mTracks;
 
@@ -20,6 +26,10 @@ class ATrackContext {
     std::weak_ptr<UTracks::UTrack> mSelectedTrack;
     std::vector<std::weak_ptr<UTracks::UTrackPoint>> mSelectedPoints;
 
+    ETrackNodePickType mSelectedPickType;
+
+    bool bSelectingJunctionPartner;
+
     void InitSimpleShader();
     void DestroyGLResources();
 
@@ -27,15 +37,24 @@ class ATrackContext {
     void RenderPointDataEditorSingle(std::shared_ptr<UTracks::UTrackPoint> point);
     void RenderPointDataEditorMulti();
 
+    void RenderPickingBuffer(ASceneCamera& camera);
+
+    void PostprocessNodes();
+
+
 public:
     ATrackContext();
     ~ATrackContext();
 
     void InitGLResources();
+
     void RenderTreeView();
     void RenderDataEditor();
     void Render(ASceneCamera& camera);
     void RenderUI(ASceneCamera& camera);
+
+    void OnMouseHover(ASceneCamera& camera, int32_t pX, int32_t pY);
+    void OnMouseClick(ASceneCamera& camera, int32_t pX, int32_t pY);
 
     void LoadTracks(std::filesystem::path filePath);
     void SaveTracks(std::filesystem::path dirPath);

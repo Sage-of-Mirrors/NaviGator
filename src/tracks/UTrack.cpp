@@ -80,29 +80,33 @@ shared_vector<UTracks::UTrackPoint> UTracks::UTrack::LoadNodePoints(std::filesys
     return points;
 }
 
-void UTracks::UTrack::PreprocessNodes() {
-    for (std::shared_ptr<UTrackPoint> pnt : mPoints) {
+void UTracks::UTrack::PreprocessNodes(shared_vector<UTrackPoint>& points) {
+    mCurvePointCount = 0;
+
+    for (std::shared_ptr<UTrackPoint> pnt : points) {
         if (pnt->IsCurve()) {
             mCurvePointCount++;
         }
 
-        pnt->TrySetJunctionArgument();
+        if (pnt->GetStationType() == ENodeStationType::None) {
+            pnt->TrySetJunctionArgument();
+        }
     }
 }
 
-void UTracks::UTrack::SaveNodePoints(std::filesystem::path dirName) {
+void UTracks::UTrack::SaveNodePoints(std::filesystem::path dirName, shared_vector<UTrackPoint>& points) {
     std::filesystem::path gamePath(mGameFilename);
     std::filesystem::path extPath = dirName / gamePath.filename();
 
-    PreprocessNodes();
+    PreprocessNodes(points);
 
     std::stringstream stream;
     stream.precision(2);
     stream << std::fixed;
 
-    stream << mPoints.size() << " " << mCurvePointCount << " " << (bLoops ? "close" : "open") << std::endl;
+    stream << points.size() << " " << mCurvePointCount << " " << (bLoops ? "close" : "open") << std::endl;
 
-    for (std::shared_ptr<UTrackPoint> pnt : mPoints) {
+    for (std::shared_ptr<UTrackPoint> pnt : points) {
         pnt->SavePoint(stream);
     }
 

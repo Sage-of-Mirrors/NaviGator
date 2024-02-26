@@ -5,6 +5,7 @@
 #include "application/ATrackContext.hpp"
 
 #include "ui/UViewport.hpp"
+#include "ui/UViewportPicker.hpp"
 
 #include <bstream.h>
 
@@ -23,7 +24,7 @@ AGatorContext::AGatorContext() : bIsDockingConfigured(false), mMainDockSpaceID(U
 }
 
 AGatorContext::~AGatorContext() {
-
+	UViewportPicker::DestroyPicker();
 }
 
 void AGatorContext::SetUpDocking() {
@@ -47,7 +48,6 @@ void AGatorContext::SetUpDocking() {
 		ImGui::DockBuilderDockWindow("Properties", mPropertiesPanelTopID);
 		ImGui::DockBuilderDockWindow("Data Editor", mPropertiesPanelBottomID);
 		ImGui::DockBuilderDockWindow("Main Viewport", mMainDockSpaceID);
-		ImGui::DockBuilderDockWindow("gizmo", mMainDockSpaceID);
 
 		ImGui::DockBuilderFinish(mMainDockSpaceID);
 
@@ -63,7 +63,7 @@ void AGatorContext::RenderMenuBar() {
 			}
 			if (ImGui::BeginMenu("Save")) {
 				if (ImGui::MenuItem("Track Data")) {
-
+					mTrackContext->SaveTracks("D:\\RedDead\\TrainDataSaveTest");
 				}
 
 				ImGui::EndMenu();
@@ -83,13 +83,27 @@ void AGatorContext::RenderMenuBar() {
 }
 
 void AGatorContext::Update(float deltaTime) {
+	glm::vec2 viewportSize = mMainViewport->GetViewportSize();
+	UViewportPicker::ResizePicker(uint32_t(viewportSize.x), uint32_t(viewportSize.y));
 
+	glm::vec2 screenMousePos = mAppPosition + AInput::GetMousePosition();
+	glm::vec2 bufferMousePos = screenMousePos - mMainViewport->GetViewportPosition();
+	bufferMousePos.y = mMainViewport->GetViewportSize().y - bufferMousePos.y;
+
+	if (bufferMousePos.x >= 0 && bufferMousePos.y >= 0) {
+		mTrackContext->OnMouseHover(mMainViewport->GetCamera(), int32_t(bufferMousePos.x), int32_t(bufferMousePos.y));
+
+		if (AInput::GetMouseButton(0)) {
+			mTrackContext->OnMouseClick(mMainViewport->GetCamera(), int32_t(bufferMousePos.x), int32_t(bufferMousePos.y));
+		}
+	}
 }
 
 void AGatorContext::RenderPropertiesPanel() {
 	ImGuiWindowClass window_class;
 	window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoTabBar;
 
+	// Properties panel
 	ImGui::SetNextWindowClass(&window_class);
 	ImGui::Begin("Properties", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
 
@@ -97,6 +111,7 @@ void AGatorContext::RenderPropertiesPanel() {
 	
 	ImGui::End();
 
+	// Data editor panel
 	ImGui::SetNextWindowClass(&window_class);
 	ImGui::Begin("Data Editor", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
 	
@@ -168,4 +183,7 @@ void AGatorContext::OnFileDropped(std::filesystem::path filePath) {
 void AGatorContext::OnGLInitialized() {
 	mMainViewport = std::make_shared<UViewport>("Main Viewport");
 	mNavContext->OnGLInitialized();
+
+	glm::vec2 viewportSize = mMainViewport->GetViewportSize();
+	UViewportPicker::CreatePicker(uint32_t(viewportSize.x), uint32_t(viewportSize.y));
 }

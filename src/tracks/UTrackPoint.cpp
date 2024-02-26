@@ -9,7 +9,7 @@
 
 UTracks::UTrackPoint::UTrackPoint() : mPosition(glm::zero<glm::vec3>()), mHandleA(glm::zero<glm::vec3>()),
     mHandleB(glm::zero<glm::vec3>()), mSomeScalar(0.0f), mStationType(ENodeStationType::None), bIsTunnel(false), bIsJunction(false),
-    bIsCurve(false)
+    bIsCurve(false), bHighlighted(false), bSelected(false)
 {
 
 }
@@ -81,12 +81,11 @@ void UTracks::UTrackPoint::LoadPoint(std::stringstream& stream) {
     bIsTunnel    = (infoBits & ENodeInfoBits::BITS_IS_TUNNEL)   >> 2;
     bIsJunction  = (infoBits & ENodeInfoBits::BITS_IS_JUNCTION) >> 3;
 
+    stream.get();
+
     if (bIsJunction || mStationType != ENodeStationType::None) {
         std::getline(stream, token, '\n');
         mArgument = std::string(token);
-    }
-    else {
-        std::getline(stream, token, '\n');
     }
 }
 
@@ -108,7 +107,7 @@ void UTracks::UTrackPoint::SavePoint(std::stringstream& stream) {
     infoBits |= bIsTunnel   << 2;
     infoBits |= bIsJunction << 3;
 
-    stream << infoBits;
+    stream << char(infoBits + 0x30);
 
     if (bIsJunction || mStationType != ENodeStationType::None) {
         stream << " " << mArgument << "\n";
@@ -119,10 +118,31 @@ void UTracks::UTrackPoint::SavePoint(std::stringstream& stream) {
 }
 
 void UTracks::UTrackPoint::TrySetJunctionArgument() {
-    if (!bIsJunction || mSwitchPartner.expired()) {
+    if (!bIsJunction || mJunctionPartner.expired()) {
         mArgument = "";
         return;
     }
 
-    mArgument = mSwitchPartner.lock()->GetParentTrackName();
+    mArgument = mJunctionPartner.lock()->GetParentTrackName();
+}
+
+void UTracks::UTrackPoint::SetJunctionPartner(std::shared_ptr<UTrackPoint> partner) {
+    if (partner == nullptr && !mJunctionPartner.expired()) {
+        std::shared_ptr<UTrackPoint> partnerLocked = mJunctionPartner.lock();
+        partnerLocked->BreakJunction();
+
+        BreakJunction();
+        return;
+    }
+
+    if (!bIsJunction) {
+        bIsJunction = true;
+    }
+
+    mJunctionPartner = partner;
+}
+
+void UTracks::UTrackPoint::BreakJunction() {
+    bIsJunction = false;
+    mJunctionPartner = std::weak_ptr<UTrackPoint>();
 }

@@ -4,6 +4,8 @@
 #include "ubo/common.hpp"
 #include "util/fileutil.hpp"
 #include "util/uiutil.hpp"
+#include "ui/UViewportPicker.hpp"
+#include "application/AInput.hpp"
 
 #include "primitives/USphere.hpp"
 
@@ -15,19 +17,23 @@
 #include <iostream>
 #include <algorithm>
 #include <format>
+#include <limits>
 
 constexpr const char* TRACKS_CHILD_NAME = "train_tracks";
 constexpr const char* TRACKS_FILE_NAME = "traintracks.xml";
 
 constexpr uint32_t VERTEX_ATTRIB_INDEX = 0;
 
-constexpr glm::vec4 NORMAL_COLOR = { 1.0f, 0.5f, 0.5f, 1.0f };
-constexpr glm::vec4 CURVE_COLOR = { 0.5f, 1.0f, 0.5f, 1.0f };
-constexpr glm::vec4 HANDLE_COLOR = { 0.5f, 0.5f, 1.0f, 1.0f };
-constexpr glm::vec4 JUNCTION_COLOR = { 1.0f, 0.5f, 1.0f, 1.0f };
+constexpr glm::vec4 NORMAL_COLOR = { 0.00f, 0.25f, 0.75f, 1.0f };
+constexpr glm::vec4 HIGHLIGHT_COLOR = { 1.0f, 0.5f, 0.0f, 1.0f };
+constexpr glm::vec4 SELECTED_COLOR = { 1.0f, 0.1f, 0.2f, 1.0f };
+constexpr glm::vec4 HANDLE_COLOR = { 1.0f, 0.5f, 1.0f, 1.0f };
+
+constexpr uint32_t HANDLE_A_MASK = 0x40000000;
+constexpr uint32_t HANDLE_B_MASK = 0x80000000;
 
 ATrackContext::ATrackContext() : mPntVBO(0), mPntIBO(0), mPntVAO(0), mSimpleProgram(0), bGLInitialized(false), mBaseColorUniform(0),
-    mSelectedTrack()
+    mSelectedTrack(), mSelectedPickType(ETrackNodePickType::Position), bSelectingJunctionPartner(false)
 {
 
 }
@@ -161,6 +167,37 @@ void ATrackContext::LoadTracks(std::filesystem::path filePath) {
     for (std::shared_ptr<UTracks::UTrack> track : mTracks) {
         mTrackPoints.push_back(track->LoadNodePoints(configDir));
     }
+
+    PostprocessNodes();
+}
+
+void ATrackContext::PostprocessNodes() {
+    for (shared_vector<UTracks::UTrackPoint> trackPoints : mTrackPoints) {
+        for (const std::shared_ptr<UTracks::UTrackPoint> pnt : trackPoints) {
+            if (!pnt->IsJunction() || !pnt->GetJunctionPartner().expired()) {
+                continue;
+            }
+
+            for (uint32_t trackIdx = 0; trackIdx < mTracks.size(); trackIdx++) {
+                if (mTracks[trackIdx]->GetConfigName() != pnt->GetArgument()) {
+                    continue;
+                }
+
+                glm::vec3 curPntPos = pnt->GetPosition();
+
+                for (std::shared_ptr<UTracks::UTrackPoint> otherPnt : mTrackPoints[trackIdx]) {
+                    float dist = glm::distance(curPntPos, otherPnt->GetPosition());
+
+                    if (dist <= 0.0001f) {
+                        pnt->SetJunctionPartner(otherPnt);
+                        otherPnt->SetJunctionPartner(pnt);
+                    }
+                }
+
+                break;
+            }
+        }
+    }
 }
 
 void ATrackContext::SaveTracks(std::filesystem::path dirPath) {
@@ -174,10 +211,13 @@ void ATrackContext::SaveTracks(std::filesystem::path dirPath) {
     for (std::shared_ptr<UTracks::UTrack> track : mTracks) {
         pugi::xml_node trackNode = rootNode.append_child("train_track");
         track->Serialize(trackNode);
-        track->SaveNodePoints(dirPath);
     }
 
     doc.save_file(fullConfigPath.c_str(), PUGIXML_TEXT("\t"), pugi::format_indent | pugi::format_indent_attributes | pugi::format_save_file_text, pugi::encoding_utf8);
+
+    for (uint32_t trackIdx = 0; trackIdx < mTrackPoints.size(); trackIdx++) {
+        mTracks[trackIdx]->SaveNodePoints(dirPath, mTrackPoints[trackIdx]);
+    }
 }
 
 void ATrackContext::RenderTreeView() {
@@ -250,8 +290,21 @@ void ATrackContext::RenderPointDataEditorSingle(std::shared_ptr<UTracks::UTrackP
 
         // Only nodes with station type None can be junctions, so show UI for one or the other.
         if (point->GetStationType() == UTracks::ENodeStationType::None) {
-            // TODO: junction selection UI
-            ImGui::Text("TODO: Junction selection UI");
+            if (!point->HasJunctionPartner()) {
+                if (ImGui::Button("Dropper")) {
+                    bSelectingJunctionPartner = true;
+                }
+            }
+            else {
+                ImGui::Text("Junction between:");
+                ImGui::Text("%s", point->GetParentTrackName().data());
+                ImGui::Text("and");
+                ImGui::Text("%s", point->GetJunctionPartner().lock()->GetParentTrackName().data());
+
+                if (ImGui::Button("Clear Junction")) {
+                    point->SetJunctionPartner(nullptr);
+                }
+            }
         }
         else {
             UIUtil::RenderTextInput("Station Name", point->GetArgumentForEditor(), 0);
@@ -278,7 +331,7 @@ void ATrackContext::RenderPointDataEditorMulti() {
 }
 
 void ATrackContext::RenderUI(ASceneCamera& camera) {
-    if (mTracks.size() == 0) {
+    if (mSelectedPoints.size() == 0) {
         return;
     }
 
@@ -286,9 +339,64 @@ void ATrackContext::RenderUI(ASceneCamera& camera) {
     glm::mat4 viewMtx = camera.GetViewMatrix();
 
     std::shared_ptr<UTracks::UTrackPoint> lockedPt = mSelectedPoints[0].lock();
-    glm::mat4 testMtx = glm::translate(glm::identity<glm::mat4>(), lockedPt->GetPosition());
-    if (ImGuizmo::Manipulate(&viewMtx[0][0], &projMtx[0][0], ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::WORLD, &testMtx[0][0])) {
-        lockedPt->GetPositionForEditor() = glm::vec3(testMtx[3]);
+
+    switch (mSelectedPickType) {
+        case ETrackNodePickType::Position:
+        {
+            glm::mat4 modelMtx = glm::translate(glm::identity<glm::mat4>(), lockedPt->GetPosition());
+
+            if (ImGuizmo::Manipulate(&viewMtx[0][0], &projMtx[0][0], ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::WORLD, &modelMtx[0][0])) {
+                glm::vec3 diff = glm::vec3(modelMtx[3]) - lockedPt->GetPosition();
+                lockedPt->GetPositionForEditor() = glm::vec3(modelMtx[3]);
+
+                if (lockedPt->IsCurve()) {
+                    lockedPt->GetHandleAForEditor() += diff;
+                    lockedPt->GetHandleBForEditor() += diff;
+                }
+
+                if (lockedPt->HasJunctionPartner()) {
+                    std::shared_ptr<UTracks::UTrackPoint> partner = lockedPt->GetJunctionPartner().lock();
+                    partner->GetPositionForEditor() = glm::vec3(modelMtx[3]);
+
+                    if (partner->IsCurve()) {
+                        partner->GetHandleAForEditor() += diff;
+                        partner->GetHandleBForEditor() += diff;
+                    }
+                }
+            }
+
+            break;
+        }
+        case ETrackNodePickType::Handle_A:
+        {
+            glm::mat4 modelMtx = glm::translate(glm::identity<glm::mat4>(), lockedPt->GetHandleA());
+
+            if (ImGuizmo::Manipulate(&viewMtx[0][0], &projMtx[0][0], ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::WORLD, &modelMtx[0][0])) {
+                lockedPt->GetHandleAForEditor() = glm::vec3(modelMtx[3]);
+
+                if (lockedPt->HasJunctionPartner()) {
+                    std::shared_ptr<UTracks::UTrackPoint> partner = lockedPt->GetJunctionPartner().lock();
+                    partner->GetHandleAForEditor() = glm::vec3(modelMtx[3]);
+                }
+            }
+
+            break;
+        }
+        case ETrackNodePickType::Handle_B:
+        {
+            glm::mat4 modelMtx = glm::translate(glm::identity<glm::mat4>(), lockedPt->GetHandleB());
+
+            if (ImGuizmo::Manipulate(&viewMtx[0][0], &projMtx[0][0], ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::WORLD, &modelMtx[0][0])) {
+                lockedPt->GetHandleBForEditor() = glm::vec3(modelMtx[3]);
+
+                if (lockedPt->HasJunctionPartner()) {
+                    std::shared_ptr<UTracks::UTrackPoint> partner = lockedPt->GetJunctionPartner().lock();
+                    partner->GetHandleBForEditor() = glm::vec3(modelMtx[3]);
+                }
+            }
+
+            break;
+        }
     }
 }
 
@@ -314,8 +422,11 @@ void ATrackContext::Render(ASceneCamera& camera) {
 
     for (shared_vector<UTracks::UTrackPoint> trackPoints : mTrackPoints) {
         for (const std::shared_ptr<UTracks::UTrackPoint> pnt : trackPoints) {
-            if (pnt->IsJunction()) {
-                glUniform4fv(mBaseColorUniform, 1, &CURVE_COLOR.x);
+            if (pnt->IsSelected()) {
+                glUniform4fv(mBaseColorUniform, 1, &SELECTED_COLOR.x);
+            }
+            else if (pnt->IsHighlighted()) {
+                glUniform4fv(mBaseColorUniform, 1, &HIGHLIGHT_COLOR.x);
             }
             else {
                 glUniform4fv(mBaseColorUniform, 1, &NORMAL_COLOR.x);
@@ -326,15 +437,17 @@ void ATrackContext::Render(ASceneCamera& camera) {
 
             glDrawElements(GL_TRIANGLES, USphere::IndexCount, GL_UNSIGNED_INT, 0);
 
-            if (pnt->IsCurve()) {
-                glUniform4fv(mBaseColorUniform, 1, &HANDLE_COLOR.x);
+            pnt->SetHighlighted(false);
 
-                UCommonUniformBuffer::SetModelMatrix(glm::scale(glm::translate(glm::identity<glm::mat4>(), pnt->GetHandleA()), glm::vec3(0.5f, 0.5f, 0.5f)));
+            // Draw handles
+            if (pnt->IsCurve() && pnt->IsSelected()) {
+                glUniform4fv(mBaseColorUniform, 1, &HANDLE_COLOR.r);
+                UCommonUniformBuffer::SetModelMatrix(glm::translate(glm::identity<glm::mat4>(), pnt->GetHandleA()));
                 UCommonUniformBuffer::SubmitUBO();
 
                 glDrawElements(GL_TRIANGLES, USphere::IndexCount, GL_UNSIGNED_INT, 0);
 
-                UCommonUniformBuffer::SetModelMatrix(glm::scale(glm::translate(glm::identity<glm::mat4>(), pnt->GetHandleB()), glm::vec3(0.5f, 0.5f, 0.5f)));
+                UCommonUniformBuffer::SetModelMatrix(glm::translate(glm::identity<glm::mat4>(), pnt->GetHandleB()));
                 UCommonUniformBuffer::SubmitUBO();
 
                 glDrawElements(GL_TRIANGLES, USphere::IndexCount, GL_UNSIGNED_INT, 0);
@@ -344,4 +457,132 @@ void ATrackContext::Render(ASceneCamera& camera) {
 
     glUseProgram(0);
     glBindVertexArray(0);
+}
+
+void ATrackContext::RenderPickingBuffer(ASceneCamera& camera) {
+    UViewportPicker::BindBuffer();
+
+    UCommonUniformBuffer::SetProjAndViewMatrices(camera.GetProjectionMatrix(), camera.GetViewMatrix());
+    glBindVertexArray(mPntVAO);
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+
+    glEnable(GL_BLEND);
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+
+    for (uint32_t trackIdx = 0; trackIdx < mTrackPoints.size(); trackIdx++) {
+        for (uint32_t pointIdx = 0; pointIdx < mTrackPoints[trackIdx].size(); pointIdx++) {
+            UCommonUniformBuffer::SetModelMatrix(glm::translate(glm::identity<glm::mat4>(), mTrackPoints[trackIdx][pointIdx]->GetPosition()));
+            UCommonUniformBuffer::SubmitUBO();
+
+            uint32_t trackId = ((trackIdx + 1) << 16) & 0x3FFF0000;
+            uint32_t pointId = pointIdx + 1;
+            UViewportPicker::SetIdUniform(trackId | pointId);
+
+            glDrawElements(GL_TRIANGLES, USphere::IndexCount, GL_UNSIGNED_INT, 0);
+
+            if (mTrackPoints[trackIdx][pointIdx]->IsSelected()) {
+                UCommonUniformBuffer::SetModelMatrix(glm::translate(glm::identity<glm::mat4>(), mTrackPoints[trackIdx][pointIdx]->GetHandleA()));
+                UCommonUniformBuffer::SubmitUBO();
+
+                UViewportPicker::SetIdUniform(HANDLE_A_MASK | trackId | pointId);
+                glDrawElements(GL_TRIANGLES, USphere::IndexCount, GL_UNSIGNED_INT, 0);
+
+                UCommonUniformBuffer::SetModelMatrix(glm::translate(glm::identity<glm::mat4>(), mTrackPoints[trackIdx][pointIdx]->GetHandleB()));
+                UCommonUniformBuffer::SubmitUBO();
+
+                UViewportPicker::SetIdUniform(HANDLE_B_MASK | trackId | pointId);
+                glDrawElements(GL_TRIANGLES, USphere::IndexCount, GL_UNSIGNED_INT, 0);
+            }
+        }
+    }
+
+    UViewportPicker::UnbindBuffer();
+}
+
+void ATrackContext::OnMouseHover(ASceneCamera& camera, int32_t pX, int32_t pY) {
+    if (mTracks.size() == 0 || ImGuizmo::IsUsing()) {
+        return;
+    }
+
+    RenderPickingBuffer(camera);
+
+    uint32_t result = UViewportPicker::Query(pX, pY);
+    if (result == 0) {
+        return;
+    }
+
+    //mSelectedPickType = ETrackNodePickType((result & 0xC0000000) >> 30);
+    uint16_t trackIdx = ((result & 0x3FFF0000) >> 16) - 1;
+    uint16_t pointIdx = (result & 0xFFFF) - 1;
+
+    mTrackPoints[trackIdx][pointIdx]->SetHighlighted(true);
+}
+
+void ATrackContext::OnMouseClick(ASceneCamera& camera, int32_t pX, int32_t pY) {
+    if (mTracks.size() == 0 || ImGuizmo::IsUsing()) {
+        return;
+    }
+
+    RenderPickingBuffer(camera);
+    uint32_t result = UViewportPicker::Query(pX, pY);
+
+    ETrackNodePickType pickType = ETrackNodePickType((result & 0xC0000000) >> 30);
+    uint16_t trackIdx = ((result & 0x3FFF0000) >> 16) - 1;
+    uint16_t pointIdx = (result & 0xFFFF) - 1;
+
+    if (bSelectingJunctionPartner) {
+        if (pickType != ETrackNodePickType::Position) {
+            return;
+        }
+
+        std::shared_ptr<UTracks::UTrackPoint> junctionPartner = mTrackPoints[trackIdx][pointIdx];
+        if (junctionPartner->HasJunctionPartner()) {
+            junctionPartner->SetJunctionPartner(nullptr);
+        }
+
+        std::shared_ptr<UTracks::UTrackPoint> selectedNode = mSelectedPoints[0].lock();
+        selectedNode->SetJunctionPartner(junctionPartner);
+        junctionPartner->SetJunctionPartner(selectedNode);
+        
+        glm::vec3 middlePos = (junctionPartner->GetPosition() + selectedNode->GetPosition()) / 2.0f;
+        selectedNode->GetPositionForEditor() = middlePos;
+        junctionPartner->GetPositionForEditor() = middlePos;
+
+        glm::vec3 middleHandleA = (junctionPartner->GetHandleA() + selectedNode->GetHandleA()) / 2.0f;
+        selectedNode->GetHandleAForEditor() = middleHandleA;
+        junctionPartner->GetHandleAForEditor() = middleHandleA;
+
+        glm::vec3 middleHandleB = (junctionPartner->GetHandleB() + selectedNode->GetHandleB()) / 2.0f;
+        selectedNode->GetHandleBForEditor() = middleHandleB;
+        junctionPartner->GetHandleBForEditor() = middleHandleB;
+
+        bSelectingJunctionPartner = false;
+    }
+    else {
+        if (result == 0 || !AInput::GetKeyDown(341)) {
+            for (std::weak_ptr<UTracks::UTrackPoint> pnt : mSelectedPoints) {
+                pnt.lock()->SetSelected(false);
+            }
+
+            mSelectedPoints.clear();
+        }
+
+        if (result == 0) {
+            mSelectedPickType = ETrackNodePickType::Position;
+            return;
+        }
+
+        mSelectedPickType = pickType;
+
+        std::shared_ptr<UTracks::UTrackPoint> selectedPoint = mTrackPoints[trackIdx][pointIdx];
+        mSelectedPoints.push_back(selectedPoint);
+
+        selectedPoint->SetSelected(true);
+    }
 }

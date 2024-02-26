@@ -45,7 +45,10 @@ namespace UTracks {
         // Name of the track this point belongs to.
         std::string mParentTrackName;
         // Weak ref to the point this one is connected to on another track, assuming mType == Switch.
-        std::weak_ptr<UTrackPoint> mSwitchPartner;
+        std::weak_ptr<UTrackPoint> mJunctionPartner;
+
+        bool bHighlighted;
+        bool bSelected;
 
     public:
         UTrackPoint();
@@ -61,8 +64,12 @@ namespace UTracks {
         const glm::vec3& GetHandleB() const { return mHandleB; }
         const std::string& GetParentTrackName() const { return mParentTrackName; }
         const ENodeStationType& GetStationType() const { return mStationType; }
+        const std::string& GetArgument() const { return mArgument; }
+        const std::weak_ptr<UTrackPoint> GetJunctionPartner() const { return mJunctionPartner; }
 
         void SetParentTrackName(std::string name) { mParentTrackName = name; }
+        void SetJunctionPartner(std::shared_ptr<UTrackPoint> partner);
+        void BreakJunction();
 
         bool IsCurve() const { return bIsCurve; }
         bool IsJunction() const { return bIsJunction; }
@@ -73,5 +80,14 @@ namespace UTracks {
         float* GetScalarForEditor() { return &mSomeScalar; }
         ENodeStationType& GetStationTypeForEditor() { return mStationType; }
         glm::vec3& GetPositionForEditor() { return mPosition; }
+        glm::vec3& GetHandleAForEditor() { return mHandleA; }
+        glm::vec3& GetHandleBForEditor() { return mHandleB; }
+
+        bool IsHighlighted() const { return bHighlighted; }
+        bool IsSelected() const { return bSelected; }
+        bool HasJunctionPartner() const { return !mJunctionPartner.expired(); }
+
+        void SetHighlighted(bool highlighted) { bHighlighted = highlighted; }
+        void SetSelected(bool selected) { bSelected = selected; }
     };
 }

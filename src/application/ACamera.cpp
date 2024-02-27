@@ -13,7 +13,10 @@ ASceneCamera::ASceneCamera() : mNearPlane(1.0f), mFarPlane(1000000.f), mFovy(glm
 	mCenter = mEye - mForward;
 }
 
-void ASceneCamera::Update(float deltaTime) {
+void ASceneCamera::Update(float deltaTime, float screenWidth, float screenHeight) {
+	mScreenWidth = screenWidth;
+	mScreenHeight = screenHeight;
+
 	glm::vec3 moveDir = glm::zero<glm::vec3>();
 
 	if (ImGui::IsKeyDown(ImGuiKey_W)) // Forward
@@ -68,4 +71,23 @@ void ASceneCamera::Rotate(float deltaTime, float sensitivity, ImVec2 mouseDelta)
 
 	mRight = glm::normalize(glm::cross(mForward, UNIT_Y));
 	mUp = glm::normalize(glm::cross(mRight, mForward));
+}
+
+glm::mat4 ASceneCamera::GetViewMatrix() {
+	return glm::lookAt(mEye, mCenter, mUp);
+}
+
+glm::mat4 ASceneCamera::GetProjectionMatrix() {
+	switch (mViewMode) {
+		case CAM_VIEW_PROJ:
+			return glm::perspective(mFovy, mAspectRatio, mNearPlane, mFarPlane);
+		case CAM_VIEW_ORTHO:
+			return glm::ortho(0.0f, mScreenWidth, 0.0f, mScreenHeight, -1000.0f, 1000.0f);
+		default:
+			return glm::identity<glm::mat4>();
+	}
+}
+
+void ASceneCamera::SetViewMode(uint8_t mode) {
+	mViewMode = mode;
 }

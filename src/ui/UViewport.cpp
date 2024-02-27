@@ -77,18 +77,67 @@ void UViewport::RenderUI(float deltaTime) {
     window_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoTabBar;
     ImGui::SetNextWindowClass(&window_class);
 
-    ImGui::Begin(name.c_str(), &bIsOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove);
+    ImGui::Begin(name.c_str(), &bIsOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar);
+    ImGui::PopStyleVar();
+
+    ImGui::BeginMenuBar();
+    if (ImGui::BeginMenu("View")) {
+        if (ImGui::MenuItem("Perspective/Orthographic")) {
+            if (mCamera.GetViewMode() == CAM_VIEW_PROJ) {
+                mCamera.SetViewMode(CAM_VIEW_ORTHO);
+            }
+            else {
+                mCamera.SetViewMode(CAM_VIEW_PROJ);
+            }
+        }
+        if (ImGui::BeginMenu("Viewpoint...")) {
+            if (ImGui::MenuItem("Top")) {
+                mCamera.SetViewMode(CAM_VIEW_ORTHO);
+                mCamera.SetView(UNIT_Y, ZERO, UNIT_Z);
+            }
+            if (ImGui::MenuItem("Bottom")) {
+                mCamera.SetViewMode(CAM_VIEW_ORTHO);
+                mCamera.SetView(-UNIT_Y, ZERO, UNIT_Z);
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Front")) {
+                mCamera.SetViewMode(CAM_VIEW_ORTHO);
+                mCamera.SetView(UNIT_Z, ZERO, UNIT_Y);
+            }
+            if (ImGui::MenuItem("Back")) {
+                mCamera.SetViewMode(CAM_VIEW_ORTHO);
+                mCamera.SetView(-UNIT_Z, ZERO, UNIT_Y);
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Left")) {
+                mCamera.SetViewMode(CAM_VIEW_ORTHO);
+                mCamera.SetView(UNIT_X, ZERO, UNIT_Y);
+            }
+            if (ImGui::MenuItem("Right")) {
+                mCamera.SetViewMode(CAM_VIEW_ORTHO);
+                mCamera.SetView(-UNIT_X, ZERO, UNIT_Y);
+            }
+            ImGui::EndMenu();
+        }
+        ImGui::EndMenu();
+    }
+    ImGui::EndMenuBar();
+    
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0.0f, 0.0f });
+
+    ImGui::BeginChild("actualViewport");
     ImGuizmo::SetDrawlist();
 
     // This would normally be in an Update() function, but
     // the camera needs access to this ImGui window's input data.
     if (ImGui::IsWindowFocused()) {
-        mCamera.Update(deltaTime);
+        mCamera.Update(deltaTime, mViewportSize.x, mViewportSize.y);
     }
 
     ResizeViewport();
     ImGui::Image((void*)size_t(mTexIds[TEX_COLOR]), { mViewportSize.x, mViewportSize.y }, { 0, 1 }, { 1, 0 });
 
+    ImGui::EndChild();
     ImGui::End();
 // Window end
 

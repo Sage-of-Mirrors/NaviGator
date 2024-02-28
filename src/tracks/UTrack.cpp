@@ -9,9 +9,19 @@
 #include <iostream>
 #include <string>
 
-UTracks::UTrack::UTrack() : mGameFilename(""), mConfigName(""), bStopsAtStations(false), mBrakingDist(10), mCurvePointCount(0)
+constexpr const char* GAME_DAT_PATH = "common:/data/levels/rdr3/";
+
+UTracks::UTrack::UTrack() : mGameFilename(""), mConfigName(""), bStopsAtStations(false), mBrakingDist(10), mCurvePointCount(0), bLoops(false)
 {
 
+}
+
+UTracks::UTrack::UTrack(std::string name) : UTrack() {
+    mConfigName = name;
+    std::filesystem::path gameFilenamePath = std::filesystem::path(GAME_DAT_PATH) / name;
+    gameFilenamePath.replace_extension(".dat");
+
+    mGameFilename = gameFilenamePath.u8string();
 }
 
 UTracks::UTrack::~UTrack() {
@@ -83,13 +93,25 @@ shared_vector<UTracks::UTrackPoint> UTracks::UTrack::LoadNodePoints(std::filesys
 void UTracks::UTrack::PreprocessNodes(shared_vector<UTrackPoint>& points) {
     mCurvePointCount = 0;
 
-    for (std::shared_ptr<UTrackPoint> pnt : points) {
-        if (pnt->IsCurve()) {
+    for (uint32_t i = 0; i < points.size(); i++) {
+        std::shared_ptr<UTrackPoint> curPoint = points[i];
+        float linearDist = 0.0f;
+
+        if (bLoops) {
+            linearDist = glm::distance(curPoint->GetPosition(), points[(i + 1) % points.size()]->GetPosition());
+        }
+        else {
+            linearDist = (i + 1 == points.size()) ? 0.0f : glm::distance(curPoint->GetPosition(), points[i + 1]->GetPosition());
+        }
+
+        curPoint->SetScalar(linearDist);
+
+        if (curPoint->IsCurve()) {
             mCurvePointCount++;
         }
 
-        if (pnt->GetStationType() == ENodeStationType::None) {
-            pnt->TrySetJunctionArgument();
+        if (curPoint->GetStationType() == ENodeStationType::None) {
+            curPoint->TrySetJunctionArgument();
         }
     }
 }

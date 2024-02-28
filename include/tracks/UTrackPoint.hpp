@@ -52,6 +52,9 @@ namespace UTracks {
 
     public:
         UTrackPoint();
+        UTrackPoint(std::string parentTrackName);
+        UTrackPoint(const UTrackPoint& other);
+
         ~UTrackPoint();
 
         void LoadPoint(std::stringstream& stream);
@@ -66,6 +69,9 @@ namespace UTracks {
         const ENodeStationType& GetStationType() const { return mStationType; }
         const std::string& GetArgument() const { return mArgument; }
         const std::weak_ptr<UTrackPoint> GetJunctionPartner() const { return mJunctionPartner; }
+
+        void SetPosition(const glm::vec3& pos) { mPosition = pos; }
+        void SetScalar(const float s) { mSomeScalar = s; }
 
         void SetParentTrackName(std::string name) { mParentTrackName = name; }
         void SetJunctionPartner(std::shared_ptr<UTrackPoint> partner);

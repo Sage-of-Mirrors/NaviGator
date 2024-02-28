@@ -14,6 +14,17 @@ UTracks::UTrackPoint::UTrackPoint() : mPosition(glm::zero<glm::vec3>()), mHandle
 
 }
 
+UTracks::UTrackPoint::UTrackPoint(std::string parentTrackName) : UTrackPoint() {
+    mParentTrackName = parentTrackName;
+}
+
+UTracks::UTrackPoint::UTrackPoint(const UTracks::UTrackPoint& other) : UTrackPoint() {
+    mPosition = other.mPosition;
+    mHandleA = other.mHandleA;
+    mHandleB = other.mHandleB;
+    mParentTrackName = other.mParentTrackName;
+}
+
 UTracks::UTrackPoint::~UTrackPoint() {
 
 }

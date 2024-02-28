@@ -28,6 +28,10 @@ class ATrackContext {
 
     ETrackNodePickType mSelectedPickType;
 
+    std::string mPendingNewTrackName;
+    bool bTrackDialogOpen;
+    bool bCanDuplicatePoint;
+
     bool bSelectingJunctionPartner;
 
     void InitSimpleShader();
@@ -37,10 +41,13 @@ class ATrackContext {
     void RenderPointDataEditorSingle(std::shared_ptr<UTracks::UTrackPoint> point);
     void RenderPointDataEditorMulti();
 
+    void RenderNewTrackDialog();
+
     void RenderPickingBuffer(ASceneCamera& camera);
 
     void PostprocessNodes();
 
+    void ClearSelectedPoints();
 
 public:
     ATrackContext();

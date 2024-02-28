@@ -11,7 +11,7 @@
 constexpr int TEX_COLOR = 0;
 constexpr int TEX_DEPTH = 1;
 
-constexpr float COLOR_RESET[] = { 0.5f, 0.5f, 0.5f, 1.0f };
+constexpr float COLOR_RESET[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 constexpr float DEPTH_RESET = 1.0f;
 
 

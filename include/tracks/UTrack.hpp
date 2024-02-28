@@ -26,6 +26,7 @@ namespace UTracks {
 
     public:
         UTrack();
+        UTrack(std::string name);
         ~UTrack();
 
         void Deserialize(pugi::xml_node& node);

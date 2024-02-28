@@ -21,6 +21,7 @@
 
 constexpr const char* TRACKS_CHILD_NAME = "train_tracks";
 constexpr const char* TRACKS_FILE_NAME = "traintracks.xml";
+constexpr const char* NEW_TRACK_DIALOG_LABEL = "New Track";
 
 constexpr uint32_t VERTEX_ATTRIB_INDEX = 0;
 
@@ -33,7 +34,8 @@ constexpr uint32_t HANDLE_A_MASK = 0x40000000;
 constexpr uint32_t HANDLE_B_MASK = 0x80000000;
 
 ATrackContext::ATrackContext() : mPntVBO(0), mPntIBO(0), mPntVAO(0), mSimpleProgram(0), bGLInitialized(false), mBaseColorUniform(0),
-    mSelectedTrack(), mSelectedPickType(ETrackNodePickType::Position), bSelectingJunctionPartner(false)
+    mSelectedTrack(), mSelectedPickType(ETrackNodePickType::Position), bSelectingJunctionPartner(false), mPendingNewTrackName(""),
+    bTrackDialogOpen(false), bCanDuplicatePoint(true)
 {
 
 }
@@ -226,8 +228,28 @@ void ATrackContext::RenderTreeView() {
         return;
     }
 
-    ImGui::SetNextItemOpen(true);
-    if (ImGui::TreeNode("Track Configs")) {
+    bool treeNodeOpen = ImGui::TreeNodeEx("Track Configs", ImGuiTreeNodeFlags_DefaultOpen);
+    ImGui::PushID("Track Configs");
+    
+    if (ImGui::BeginPopupContextItem("Context Menu"))
+    {
+        if (ImGui::MenuItem("Add track...")) {
+            bTrackDialogOpen = true;
+        }
+
+        ImGui::EndPopup();
+    }
+    
+    ImGui::PopID();
+
+    if (bTrackDialogOpen) {
+        ImGui::OpenPopup(NEW_TRACK_DIALOG_LABEL);
+        bTrackDialogOpen = false;
+    }
+
+    RenderNewTrackDialog();
+
+    if (treeNodeOpen) {
         ImGui::Indent();
 
         for (uint32_t i = 0; i < mTracks.size(); i++) {
@@ -330,9 +352,48 @@ void ATrackContext::RenderPointDataEditorMulti() {
     }
 }
 
+void ATrackContext::RenderNewTrackDialog() {
+    bool open = true;
+    ImGui::SetNextWindowSize({ 300, 0 });
+    if (ImGui::BeginPopupModal(NEW_TRACK_DIALOG_LABEL, &open)) {
+        ImGui::Text("New track name:");
+        UIUtil::RenderTextInput("##pendingTrackName", &mPendingNewTrackName, 0);
+
+        if (mPendingNewTrackName.empty()) {
+            ImGui::BeginDisabled();
+        }
+        if (ImGui::Button("OK", { 100, 0 })) {
+            std::shared_ptr<UTracks::UTrack> newTrack = std::make_shared<UTracks::UTrack>(mPendingNewTrackName);
+            mTracks.push_back(newTrack);
+
+            shared_vector<UTracks::UTrackPoint> newTrackPoints;
+            std::shared_ptr<UTracks::UTrackPoint> newPoint = std::make_shared<UTracks::UTrackPoint>(newTrack->GetConfigName());
+            newTrackPoints.push_back(newPoint);
+
+            mTrackPoints.push_back(newTrackPoints);
+            ImGui::CloseCurrentPopup();
+        }
+        if (mPendingNewTrackName.empty()) {
+            ImGui::EndDisabled();
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Cancel", { 100, 0 })) {
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
+    }
+}
+
 void ATrackContext::RenderUI(ASceneCamera& camera) {
     if (mSelectedPoints.size() == 0) {
         return;
+    }
+
+    if (!ImGuizmo::IsUsing()) {
+        bCanDuplicatePoint = true;
     }
 
     glm::mat4 projMtx = camera.GetProjectionMatrix();
@@ -346,6 +407,24 @@ void ATrackContext::RenderUI(ASceneCamera& camera) {
             glm::mat4 modelMtx = glm::translate(glm::identity<glm::mat4>(), lockedPt->GetPosition());
 
             if (ImGuizmo::Manipulate(&viewMtx[0][0], &projMtx[0][0], ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::WORLD, &modelMtx[0][0])) {
+                if (ImGui::GetIO().KeyCtrl && bCanDuplicatePoint) {
+                    bCanDuplicatePoint = false;
+
+                    std::shared_ptr<UTracks::UTrackPoint> newPt = std::make_shared<UTracks::UTrackPoint>(*lockedPt);
+                    for (uint32_t i = 0; i < mTracks.size(); i++) {
+                        if (mTracks[i]->GetConfigName() == newPt->GetParentTrackName()) {
+                            mTrackPoints[i].push_back(newPt);
+                            break;
+                        }
+                    }
+
+                    ClearSelectedPoints();
+                    mSelectedPoints.push_back(newPt);
+                    newPt->SetSelected(true);
+
+                    lockedPt = newPt;
+                }
+
                 glm::vec3 diff = glm::vec3(modelMtx[3]) - lockedPt->GetPosition();
                 lockedPt->GetPositionForEditor() = glm::vec3(modelMtx[3]);
 
@@ -566,11 +645,7 @@ void ATrackContext::OnMouseClick(ASceneCamera& camera, int32_t pX, int32_t pY) {
     }
     else {
         if (result == 0 || !AInput::GetKeyDown(341)) {
-            for (std::weak_ptr<UTracks::UTrackPoint> pnt : mSelectedPoints) {
-                pnt.lock()->SetSelected(false);
-            }
-
-            mSelectedPoints.clear();
+            ClearSelectedPoints();
         }
 
         if (result == 0) {
@@ -585,4 +660,12 @@ void ATrackContext::OnMouseClick(ASceneCamera& camera, int32_t pX, int32_t pY) {
 
         selectedPoint->SetSelected(true);
     }
+}
+
+void ATrackContext::ClearSelectedPoints() {
+    for (std::weak_ptr<UTracks::UTrackPoint> pnt : mSelectedPoints) {
+        pnt.lock()->SetSelected(false);
+    }
+
+    mSelectedPoints.clear();
 }

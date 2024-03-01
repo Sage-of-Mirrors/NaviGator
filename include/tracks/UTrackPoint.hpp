@@ -88,6 +88,7 @@ namespace UTracks {
         glm::vec3& GetPositionForEditor() { return mPosition; }
         glm::vec3& GetHandleAForEditor() { return mHandleA; }
         glm::vec3& GetHandleBForEditor() { return mHandleB; }
+        bool* GetIsCurveForEditor() { return &bIsCurve; }
 
         bool IsHighlighted() const { return bHighlighted; }
         bool IsSelected() const { return bSelected; }

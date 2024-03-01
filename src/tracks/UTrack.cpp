@@ -11,7 +11,8 @@
 
 constexpr const char* GAME_DAT_PATH = "common:/data/levels/rdr3/";
 
-UTracks::UTrack::UTrack() : mGameFilename(""), mConfigName(""), bStopsAtStations(false), mBrakingDist(10), mCurvePointCount(0), bLoops(false)
+UTracks::UTrack::UTrack() : mGameFilename(""), mConfigName(""), bStopsAtStations(false), mBrakingDist(10), mCurvePointCount(0), bLoops(false),
+    bIsHidden(false)
 {
 
 }

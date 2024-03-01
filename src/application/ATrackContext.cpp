@@ -6,6 +6,7 @@
 #include "util/uiutil.hpp"
 #include "ui/UViewportPicker.hpp"
 #include "application/AInput.hpp"
+#include "ui/UPathRenderer.hpp"
 
 #include "primitives/USphere.hpp"
 
@@ -166,8 +167,17 @@ void ATrackContext::LoadTracks(std::filesystem::path filePath) {
         }
     );
 
-    for (std::shared_ptr<UTracks::UTrack> track : mTracks) {
-        mTrackPoints.push_back(track->LoadNodePoints(configDir));
+    for (uint32_t i = 0; i < mTracks.size(); i++) {
+        mTrackPoints.push_back(mTracks[i]->LoadNodePoints(configDir));
+
+        std::shared_ptr<CPathRenderer> pathRenderer = std::make_shared<CPathRenderer>();
+        pathRenderer->Init();
+        for (std::shared_ptr<UTracks::UTrackPoint> pnt : mTrackPoints[i]) {
+            pathRenderer->mPath.push_back({ pnt->GetPosition(), {1, 0, 0, 1,}, pnt->GetHandleA(), pnt->GetHandleB() });
+        }
+        pathRenderer->UpdateData();
+
+        mPathRenderers.push_back(pathRenderer);
     }
 
     PostprocessNodes();
@@ -254,13 +264,27 @@ void ATrackContext::RenderTreeView() {
 
         for (uint32_t i = 0; i < mTracks.size(); i++) {
             std::shared_ptr<UTracks::UTrack> track = mTracks[i];
+            ImGui::PushID(i);
+
+            if (track->IsHidden()) {
+                if (ImGui::Button("close", { 50, 0 })) {
+                    track->SetHidden(false);
+                }
+            }
+            else {
+                if (ImGui::Button("open", { 50, 0 })) {
+                    track->SetHidden(true);
+                }
+            }
+
+            ImGui::SameLine();
 
             bool isSelected = !mSelectedTrack.expired() && mSelectedTrack.lock() == track;
-            std::string imguiId = track->GetConfigName(); // std::format("{}##{}", track->GetConfigName(), i);
-            
-            if (ImGui::Selectable(imguiId.c_str(), isSelected)) {
+            if (ImGui::Selectable(track->GetConfigName().c_str(), isSelected)) {
                 mSelectedTrack = track;
             }
+
+            ImGui::PopID();
         }
 
         ImGui::TreePop();
@@ -333,10 +357,12 @@ void ATrackContext::RenderPointDataEditorSingle(std::shared_ptr<UTracks::UTrackP
         }
 
         ImGui::Spacing();
-        ImGui::InputFloat("Unknown Float", point->GetScalarForEditor());
+        ImGui::Checkbox("Is in a tunnel?", point->GetIsTunnelForEditor());
 
         ImGui::Spacing();
-        ImGui::Checkbox("Is in a tunnel?", point->GetIsTunnelForEditor());
+        if (ImGui::Checkbox("Is curve?", point->GetIsCurveForEditor())) {
+
+        }
 
         ImGui::Unindent();
     }
@@ -363,14 +389,25 @@ void ATrackContext::RenderNewTrackDialog() {
             ImGui::BeginDisabled();
         }
         if (ImGui::Button("OK", { 100, 0 })) {
+            // Create new track
             std::shared_ptr<UTracks::UTrack> newTrack = std::make_shared<UTracks::UTrack>(mPendingNewTrackName);
             mTracks.push_back(newTrack);
 
+            // Create track points vector
             shared_vector<UTracks::UTrackPoint> newTrackPoints;
             std::shared_ptr<UTracks::UTrackPoint> newPoint = std::make_shared<UTracks::UTrackPoint>(newTrack->GetConfigName());
             newTrackPoints.push_back(newPoint);
-
             mTrackPoints.push_back(newTrackPoints);
+
+            // Create path renderer
+            std::shared_ptr<CPathRenderer> pathRenderer = std::make_shared<CPathRenderer>();
+            pathRenderer->Init();
+            for (std::shared_ptr<UTracks::UTrackPoint> pnt : newTrackPoints) {
+                pathRenderer->mPath.push_back({ pnt->GetPosition(), {1, 0, 0, 1,}, pnt->GetHandleA(), pnt->GetHandleB() });
+            }
+            pathRenderer->UpdateData();
+            mPathRenderers.push_back(pathRenderer);
+
             ImGui::CloseCurrentPopup();
         }
         if (mPendingNewTrackName.empty()) {
@@ -401,6 +438,7 @@ void ATrackContext::RenderUI(ASceneCamera& camera) {
 
     std::shared_ptr<UTracks::UTrackPoint> lockedPt = mSelectedPoints[0].lock();
 
+    bool bUpdated = false;
     switch (mSelectedPickType) {
         case ETrackNodePickType::Position:
         {
@@ -414,6 +452,10 @@ void ATrackContext::RenderUI(ASceneCamera& camera) {
                     for (uint32_t i = 0; i < mTracks.size(); i++) {
                         if (mTracks[i]->GetConfigName() == newPt->GetParentTrackName()) {
                             mTrackPoints[i].push_back(newPt);
+
+                            mPathRenderers[i]->mPath.push_back({ newPt->GetPosition(), {1, 0, 0, 1}, newPt->GetHandleA(), newPt->GetHandleB() });
+                            mPathRenderers[i]->UpdateData();
+
                             break;
                         }
                     }
@@ -428,20 +470,18 @@ void ATrackContext::RenderUI(ASceneCamera& camera) {
                 glm::vec3 diff = glm::vec3(modelMtx[3]) - lockedPt->GetPosition();
                 lockedPt->GetPositionForEditor() = glm::vec3(modelMtx[3]);
 
-                if (lockedPt->IsCurve()) {
-                    lockedPt->GetHandleAForEditor() += diff;
-                    lockedPt->GetHandleBForEditor() += diff;
-                }
+                lockedPt->GetHandleAForEditor() += diff;
+                lockedPt->GetHandleBForEditor() += diff;
 
                 if (lockedPt->HasJunctionPartner()) {
                     std::shared_ptr<UTracks::UTrackPoint> partner = lockedPt->GetJunctionPartner().lock();
                     partner->GetPositionForEditor() = glm::vec3(modelMtx[3]);
 
-                    if (partner->IsCurve()) {
-                        partner->GetHandleAForEditor() += diff;
-                        partner->GetHandleBForEditor() += diff;
-                    }
+                    partner->GetHandleAForEditor() += diff;
+                    partner->GetHandleBForEditor() += diff;
                 }
+
+                bUpdated = true;
             }
 
             break;
@@ -459,6 +499,7 @@ void ATrackContext::RenderUI(ASceneCamera& camera) {
                 }
             }
 
+            bUpdated = true;
             break;
         }
         case ETrackNodePickType::Handle_B:
@@ -474,7 +515,28 @@ void ATrackContext::RenderUI(ASceneCamera& camera) {
                 }
             }
 
+            bUpdated = true;
             break;
+        }
+    }
+
+    if (bUpdated) {
+        for (uint32_t i = 0; i < mTracks.size(); i++) {
+            if (mTracks[i]->GetConfigName() == lockedPt->GetParentTrackName()) {
+                for (uint32_t j = 0; j < mTrackPoints[i].size(); j++) {
+                    if (mTrackPoints[i][j] == lockedPt) {
+                        CPathPoint& p = mPathRenderers[i]->mPath[j];
+                        p.Position = lockedPt->GetPosition();
+                        p.LeftHandle = lockedPt->GetHandleA();
+                        p.RightHandle = lockedPt->GetHandleB();
+
+                        mPathRenderers[i]->UpdateData();
+                        break;
+                    }
+                }
+
+                break;
+            }
         }
     }
 }
@@ -499,8 +561,12 @@ void ATrackContext::Render(ASceneCamera& camera) {
 
     glUseProgram(mSimpleProgram);
 
-    for (shared_vector<UTracks::UTrackPoint> trackPoints : mTrackPoints) {
-        for (const std::shared_ptr<UTracks::UTrackPoint> pnt : trackPoints) {
+    for (uint32_t trackIdx = 0; trackIdx < mTracks.size(); trackIdx++) {
+        if (mTracks[trackIdx]->IsHidden()) {
+            continue;
+        }
+
+        for (const std::shared_ptr<UTracks::UTrackPoint> pnt : mTrackPoints[trackIdx]) {
             if (pnt->IsSelected()) {
                 glUniform4fv(mBaseColorUniform, 1, &SELECTED_COLOR.x);
             }
@@ -536,6 +602,14 @@ void ATrackContext::Render(ASceneCamera& camera) {
 
     glUseProgram(0);
     glBindVertexArray(0);
+
+    for (uint32_t trackIdx = 0; trackIdx < mTracks.size(); trackIdx++) {
+        if (mTracks[trackIdx]->IsHidden()) {
+            continue;
+        }
+
+        mPathRenderers[trackIdx]->Draw(camera, glm::identity<glm::mat4>());
+    }
 }
 
 void ATrackContext::RenderPickingBuffer(ASceneCamera& camera) {
@@ -554,7 +628,11 @@ void ATrackContext::RenderPickingBuffer(ASceneCamera& camera) {
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
 
-    for (uint32_t trackIdx = 0; trackIdx < mTrackPoints.size(); trackIdx++) {
+    for (uint32_t trackIdx = 0; trackIdx < mTracks.size(); trackIdx++) {
+        if (mTracks[trackIdx]->IsHidden()) {
+            continue;
+        }
+
         for (uint32_t pointIdx = 0; pointIdx < mTrackPoints[trackIdx].size(); pointIdx++) {
             UCommonUniformBuffer::SetModelMatrix(glm::translate(glm::identity<glm::mat4>(), mTrackPoints[trackIdx][pointIdx]->GetPosition()));
             UCommonUniformBuffer::SubmitUBO();

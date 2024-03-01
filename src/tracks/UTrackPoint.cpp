@@ -23,6 +23,8 @@ UTracks::UTrackPoint::UTrackPoint(const UTracks::UTrackPoint& other) : UTrackPoi
     mHandleA = other.mHandleA;
     mHandleB = other.mHandleB;
     mParentTrackName = other.mParentTrackName;
+    bIsCurve = other.bIsCurve;
+    bIsTunnel = other.bIsTunnel;
 }
 
 UTracks::UTrackPoint::~UTrackPoint() {

@@ -14,11 +14,15 @@ enum ETrackNodePickType : uint8_t {
     Handle_B
 };
 
+class CPathRenderer;
+
 class ATrackContext {
     shared_vector<UTracks::UTrack> mTracks;
 
     using points_vector = std::vector<shared_vector<UTracks::UTrackPoint>>;
     points_vector mTrackPoints;
+
+    shared_vector<CPathRenderer> mPathRenderers;
 
     bool bGLInitialized;
     uint32_t mPntVBO, mPntIBO, mPntVAO, mSimpleProgram, mBaseColorUniform;

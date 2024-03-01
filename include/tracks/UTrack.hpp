@@ -22,6 +22,8 @@ namespace UTracks {
         bool bLoops;
         uint32_t mCurvePointCount;
 
+        bool bIsHidden;
+
         void PreprocessNodes(shared_vector<UTrackPoint>& points);
 
     public:
@@ -36,6 +38,8 @@ namespace UTracks {
         void SaveNodePoints(std::filesystem::path dirName, shared_vector<UTrackPoint>& points);
 
         const std::string GetConfigName() const { return mConfigName; }
+        bool IsHidden() const { return bIsHidden; }
+        void SetHidden(bool hidden) { bIsHidden = hidden; }
 
         std::string* GetConfigNameForEditor() { return &mConfigName; }
         bool* GetStopsAtStationsForEditor() { return &bStopsAtStations; }

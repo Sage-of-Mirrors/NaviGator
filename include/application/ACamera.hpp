@@ -39,11 +39,14 @@ class ASceneCamera {
 
 	float mScreenWidth;
 	float mScreenHeight;
+	float mZoomLevel;
 
 	ImVec2 mLastMouseDelta;
 
 	uint8_t mViewMode = CAM_VIEW_PROJ;
 
+	void ProcessInputProjection(float deltaTime);
+	void ProcessInputOrthographic(float deltaTime);
 	void Rotate(float deltaTime, float sensitivity, ImVec2 mouseDelta);
 
 public:
@@ -62,5 +65,6 @@ public:
 	glm::mat4 GetProjectionMatrix();
 
 	void SetViewMode(uint8_t mode);
-	void SetView(glm::vec3 eye, glm::vec3 center, glm::vec3 up) { mEye = eye; mCenter = center; mUp = up; }
+	void SetView(glm::vec3 eye, glm::vec3 center, glm::vec3 up);
+	void SetViewportSize(float width, float height) { mScreenWidth = width; mScreenHeight = height; }
 };

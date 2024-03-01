@@ -11,7 +11,7 @@
 constexpr int TEX_COLOR = 0;
 constexpr int TEX_DEPTH = 1;
 
-constexpr float COLOR_RESET[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+constexpr float COLOR_RESET[] = { 0.20f, 0.20f, 0.20f, 1.0f };
 constexpr float DEPTH_RESET = 1.0f;
 
 
@@ -61,6 +61,8 @@ void UViewport::ResizeViewport() {
 
     Clear();
     CreateFramebuffer();
+
+    mCamera.SetViewportSize(mViewportSize.x, mViewportSize.y);
 }
 
 void UViewport::RenderUI(float deltaTime) {
@@ -93,29 +95,29 @@ void UViewport::RenderUI(float deltaTime) {
         if (ImGui::BeginMenu("Viewpoint...")) {
             if (ImGui::MenuItem("Top")) {
                 mCamera.SetViewMode(CAM_VIEW_ORTHO);
-                mCamera.SetView(UNIT_Y, ZERO, UNIT_Z);
+                mCamera.SetView(UNIT_Y * 10.0f, ZERO, -UNIT_Z);
             }
             if (ImGui::MenuItem("Bottom")) {
                 mCamera.SetViewMode(CAM_VIEW_ORTHO);
-                mCamera.SetView(-UNIT_Y, ZERO, UNIT_Z);
+                mCamera.SetView(-UNIT_Y * 10.0f, ZERO, UNIT_Z);
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Front")) {
                 mCamera.SetViewMode(CAM_VIEW_ORTHO);
-                mCamera.SetView(UNIT_Z, ZERO, UNIT_Y);
+                mCamera.SetView(UNIT_Z * 10.0f, ZERO, -UNIT_Y);
             }
             if (ImGui::MenuItem("Back")) {
                 mCamera.SetViewMode(CAM_VIEW_ORTHO);
-                mCamera.SetView(-UNIT_Z, ZERO, UNIT_Y);
+                mCamera.SetView(-UNIT_Z * 10.0f, ZERO, UNIT_Y);
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Left")) {
                 mCamera.SetViewMode(CAM_VIEW_ORTHO);
-                mCamera.SetView(UNIT_X, ZERO, UNIT_Y);
+                mCamera.SetView(UNIT_X * 10.0f, ZERO, -UNIT_Y);
             }
             if (ImGui::MenuItem("Right")) {
                 mCamera.SetViewMode(CAM_VIEW_ORTHO);
-                mCamera.SetView(-UNIT_X, ZERO, UNIT_Y);
+                mCamera.SetView(-UNIT_X * 10.0f, ZERO, UNIT_Y);
             }
             ImGui::EndMenu();
         }

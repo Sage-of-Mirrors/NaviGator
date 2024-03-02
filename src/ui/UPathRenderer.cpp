@@ -155,9 +155,19 @@ void CPathRenderer::UpdateData() {
         circles.push_back({ mPath.at(i).RightHandle, mPath.at(i).Color, { 0,0,0 }, { 0,0,0 } });
         circles.push_back({ mPath.at(i).LeftHandle, mPath.at(i).Color, { 0,0,0 }, { 0,0,0 } });
 
+        // Point to right handle
         points.push_back(mPath.at(i)); 
         points.push_back({ mPath.at(i).RightHandle, mPath.at(i).Color, { 0,0,0 }, { 0,0,0 } });
+        
+        // Point copy for degenerate line
+        points.push_back(mPath.at(i));
+
+        // Point to left handle
+        points.push_back(mPath.at(i));
         points.push_back({ mPath.at(i).LeftHandle, mPath.at(i).Color, { 0,0,0 }, { 0,0, 0} });
+
+        // Degenerate line
+        points.push_back(mPath.at(i));
         points.push_back(mPath.at(i));
 
         if (i == mPath.size() - 1 && isClosed == false) break;

@@ -87,37 +87,45 @@ void UViewport::RenderUI(float deltaTime) {
         if (ImGui::MenuItem("Perspective/Orthographic")) {
             if (mCamera.GetViewMode() == CAM_VIEW_PROJ) {
                 mCamera.SetViewMode(CAM_VIEW_ORTHO);
+                ImGuizmo::SetOrthographic(true);
             }
             else {
                 mCamera.SetViewMode(CAM_VIEW_PROJ);
+                ImGuizmo::SetOrthographic(false);
             }
         }
         if (ImGui::BeginMenu("Viewpoint...")) {
             if (ImGui::MenuItem("Top")) {
                 mCamera.SetViewMode(CAM_VIEW_ORTHO);
                 mCamera.SetView(UNIT_Y * 10.0f, ZERO, -UNIT_Z);
+                ImGuizmo::SetOrthographic(true);
             }
             if (ImGui::MenuItem("Bottom")) {
                 mCamera.SetViewMode(CAM_VIEW_ORTHO);
                 mCamera.SetView(-UNIT_Y * 10.0f, ZERO, UNIT_Z);
+                ImGuizmo::SetOrthographic(true);
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Front")) {
                 mCamera.SetViewMode(CAM_VIEW_ORTHO);
                 mCamera.SetView(UNIT_Z * 10.0f, ZERO, -UNIT_Y);
+                ImGuizmo::SetOrthographic(true);
             }
             if (ImGui::MenuItem("Back")) {
                 mCamera.SetViewMode(CAM_VIEW_ORTHO);
                 mCamera.SetView(-UNIT_Z * 10.0f, ZERO, UNIT_Y);
+                ImGuizmo::SetOrthographic(true);
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Left")) {
                 mCamera.SetViewMode(CAM_VIEW_ORTHO);
                 mCamera.SetView(UNIT_X * 10.0f, ZERO, -UNIT_Y);
+                ImGuizmo::SetOrthographic(true);
             }
             if (ImGui::MenuItem("Right")) {
                 mCamera.SetViewMode(CAM_VIEW_ORTHO);
                 mCamera.SetView(-UNIT_X * 10.0f, ZERO, UNIT_Y);
+                ImGuizmo::SetOrthographic(true);
             }
             ImGui::EndMenu();
         }

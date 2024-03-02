@@ -16,6 +16,15 @@ enum ETrackNodePickType : uint8_t {
 
 class CPathRenderer;
 
+struct APointSelection {
+    uint16_t TrackIdx, PointIdx;
+
+    void Get(uint16_t& trackIdx, uint16_t& pointIdx) {
+        trackIdx = TrackIdx;
+        pointIdx = PointIdx;
+    }
+};
+
 class ATrackContext {
     shared_vector<UTracks::UTrack> mTracks;
 
@@ -28,7 +37,7 @@ class ATrackContext {
     uint32_t mPntVBO, mPntIBO, mPntVAO, mSimpleProgram, mBaseColorUniform;
 
     std::weak_ptr<UTracks::UTrack> mSelectedTrack;
-    std::vector<std::weak_ptr<UTracks::UTrackPoint>> mSelectedPoints;
+    std::vector<APointSelection> mSelectedPoints;
 
     ETrackNodePickType mSelectedPickType;
 

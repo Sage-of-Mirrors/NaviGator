@@ -501,6 +501,11 @@ void ATrackContext::RenderUI(ASceneCamera& camera) {
             if (ImGuizmo::Manipulate(&viewMtx[0][0], &projMtx[0][0], ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::WORLD, &modelMtx[0][0])) {
                 selPoint->GetHandleAForEditor() = glm::vec3(modelMtx[3]);
 
+                if (ImGui::GetIO().KeyShift) {
+                    glm::vec3 pointSpaceDelta = selPoint->GetHandleA() - selPoint->GetPosition();
+                    selPoint->GetHandleBForEditor() = -pointSpaceDelta + selPoint->GetPosition();
+                }
+
                 if (selPoint->HasJunctionPartner()) {
                     std::shared_ptr<UTracks::UTrackPoint> partner = selPoint->GetJunctionPartner().lock();
                     partner->GetHandleAForEditor() = glm::vec3(modelMtx[3]);
@@ -515,7 +520,12 @@ void ATrackContext::RenderUI(ASceneCamera& camera) {
             glm::mat4 modelMtx = glm::translate(glm::identity<glm::mat4>(), selPoint->GetHandleB());
 
             if (ImGuizmo::Manipulate(&viewMtx[0][0], &projMtx[0][0], ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::WORLD, &modelMtx[0][0])) {
-                selPoint->GetHandleBForEditor() = glm::vec3(modelMtx[3]);
+                selPoint->GetHandleAForEditor() = glm::vec3(modelMtx[3]);
+
+                if (ImGui::GetIO().KeyShift) {
+                    glm::vec3 pointSpaceDelta = selPoint->GetHandleA() - selPoint->GetPosition();
+                    selPoint->GetHandleBForEditor() = -pointSpaceDelta + selPoint->GetPosition();
+                }
 
                 if (selPoint->HasJunctionPartner()) {
                     std::shared_ptr<UTracks::UTrackPoint> partner = selPoint->GetJunctionPartner().lock();

@@ -7,6 +7,8 @@
 #include "ui/UViewport.hpp"
 #include "ui/UViewportPicker.hpp"
 
+#include "util/rdr1util.hpp"
+
 #include <bstream.h>
 
 #include <imgui.h>
@@ -169,6 +171,9 @@ void AGatorContext::OpenFile(std::filesystem::path filePath) {
 			mTrackContext->InitGLResources();
 			mTrackContext->LoadTracks(filePath);
 		}
+	}
+	else if (filePath.filename() == "swrailroad.wsi") {
+		RDR1Util::ExtractTrainPoints(filePath);
 	}
 }
 

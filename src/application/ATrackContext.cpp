@@ -661,7 +661,7 @@ void ATrackContext::RenderPickingBuffer(ASceneCamera& camera) {
 
             glDrawElements(GL_TRIANGLES, USphere::IndexCount, GL_UNSIGNED_INT, 0);
 
-            if (mTrackPoints[trackIdx][pointIdx]->IsSelected()) {
+            if (mTrackPoints[trackIdx][pointIdx]->IsSelected() && mTrackPoints[trackIdx][pointIdx]->IsCurve()) {
                 UCommonUniformBuffer::SetModelMatrix(glm::translate(glm::identity<glm::mat4>(), mTrackPoints[trackIdx][pointIdx]->GetHandleA()));
                 UCommonUniformBuffer::SubmitUBO();
 

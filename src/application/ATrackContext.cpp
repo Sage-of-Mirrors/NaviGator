@@ -267,12 +267,12 @@ void ATrackContext::RenderTreeView() {
             ImGui::PushID(i);
 
             if (track->IsHidden()) {
-                if (ImGui::Button("close", { 50, 0 })) {
+                if (ImGui::Button("Show", { 40, 0 })) {
                     track->SetHidden(false);
                 }
             }
             else {
-                if (ImGui::Button("open", { 50, 0 })) {
+                if (ImGui::Button("Hide", { 40, 0 })) {
                     track->SetHidden(true);
                 }
             }
@@ -448,10 +448,16 @@ void ATrackContext::RenderUI(ASceneCamera& camera) {
     switch (mSelectedPickType) {
         case ETrackNodePickType::Position:
         {
-            glm::mat4 modelMtx = glm::translate(glm::identity<glm::mat4>(), selPoint->GetPosition());
+            glm::vec3 avgPosition = glm::zero<glm::vec3>();
+            for (const APointSelection& s : mSelectedPoints) {
+                avgPosition += mTrackPoints[s.TrackIdx][s.PointIdx]->GetPosition();
+            }
+
+            avgPosition /= mSelectedPoints.size();
+            glm::mat4 modelMtx = glm::translate(glm::identity<glm::mat4>(), avgPosition);
 
             if (ImGuizmo::Manipulate(&viewMtx[0][0], &projMtx[0][0], ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::WORLD, &modelMtx[0][0])) {
-                if (ImGui::GetIO().KeyCtrl && bCanDuplicatePoint) {
+                if (mSelectedPoints.size() == 1 && ImGui::GetIO().KeyCtrl && bCanDuplicatePoint) {
                     bCanDuplicatePoint = false;
                     uint16_t insertIdx = pointIdx + 1;
 
@@ -475,18 +481,22 @@ void ATrackContext::RenderUI(ASceneCamera& camera) {
                     selPoint = newPt;
                 }
 
-                glm::vec3 diff = glm::vec3(modelMtx[3]) - selPoint->GetPosition();
-                selPoint->GetPositionForEditor() = glm::vec3(modelMtx[3]);
+                glm::vec3 diff = glm::vec3(modelMtx[3]) - avgPosition;
+                for (const APointSelection& s : mSelectedPoints) {
+                    std::shared_ptr<UTracks::UTrackPoint> pnt = mTrackPoints[s.TrackIdx][s.PointIdx];
 
-                selPoint->GetHandleAForEditor() += diff;
-                selPoint->GetHandleBForEditor() += diff;
+                    pnt->GetPositionForEditor() += diff;
 
-                if (selPoint->HasJunctionPartner()) {
-                    std::shared_ptr<UTracks::UTrackPoint> partner = selPoint->GetJunctionPartner().lock();
-                    partner->GetPositionForEditor() = glm::vec3(modelMtx[3]);
+                    pnt->GetHandleAForEditor() += diff;
+                    pnt->GetHandleBForEditor() += diff;
 
-                    partner->GetHandleAForEditor() += diff;
-                    partner->GetHandleBForEditor() += diff;
+                    if (pnt->HasJunctionPartner()) {
+                        std::shared_ptr<UTracks::UTrackPoint> partner = pnt->GetJunctionPartner().lock();
+                        partner->GetPositionForEditor() += diff;
+
+                        partner->GetHandleAForEditor() += diff;
+                        partner->GetHandleBForEditor() += diff;
+                    }
                 }
 
                 bUpdated = true;
@@ -539,22 +549,13 @@ void ATrackContext::RenderUI(ASceneCamera& camera) {
     }
 
     if (bUpdated) {
-        for (uint32_t i = 0; i < mTracks.size(); i++) {
-            if (mTracks[i]->GetConfigName() == selPoint->GetParentTrackName()) {
-                for (uint32_t j = 0; j < mTrackPoints[i].size(); j++) {
-                    if (mTrackPoints[i][j] == selPoint) {
-                        CPathPoint& p = mPathRenderers[i]->mPath[j];
-                        p.Position = selPoint->GetPosition();
-                        p.LeftHandle = selPoint->GetHandleA();
-                        p.RightHandle = selPoint->GetHandleB();
+        for (const APointSelection& s : mSelectedPoints) {
+            CPathPoint& p = mPathRenderers[s.TrackIdx]->mPath[s.PointIdx];
+            p.Position = mTrackPoints[s.TrackIdx][s.PointIdx]->GetPosition();
+            p.LeftHandle = mTrackPoints[s.TrackIdx][s.PointIdx]->GetHandleA();
+            p.RightHandle = mTrackPoints[s.TrackIdx][s.PointIdx]->GetHandleB();
 
-                        mPathRenderers[i]->UpdateData();
-                        break;
-                    }
-                }
-
-                break;
-            }
+            mPathRenderers[s.TrackIdx]->UpdateData();
         }
     }
 }
@@ -712,7 +713,8 @@ void ATrackContext::OnMouseClick(ASceneCamera& camera, int32_t pX, int32_t pY) {
     uint16_t pointIdx = (result & 0xFFFF) - 1;
 
     if (bSelectingJunctionPartner) {
-        if (pickType != ETrackNodePickType::Position) {
+        if (pickType != ETrackNodePickType::Position || trackIdx == UINT16_MAX) {
+            bSelectingJunctionPartner = false;
             return;
         }
 
@@ -743,13 +745,19 @@ void ATrackContext::OnMouseClick(ASceneCamera& camera, int32_t pX, int32_t pY) {
         bSelectingJunctionPartner = false;
     }
     else {
-        if (result == 0 || !AInput::GetKeyDown(341)) {
+        if (result == 0 || !ImGui::GetIO().KeyCtrl) {
             ClearSelectedPoints();
         }
 
         if (result == 0) {
             mSelectedPickType = ETrackNodePickType::Position;
             return;
+        }
+
+        for (const APointSelection s : mSelectedPoints) {
+            if (s.TrackIdx == trackIdx && s.PointIdx == pointIdx) {
+                return;
+            }
         }
 
         mSelectedPickType = pickType;

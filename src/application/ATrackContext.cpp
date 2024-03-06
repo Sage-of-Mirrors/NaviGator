@@ -153,6 +153,13 @@ void ATrackContext::LoadTracks(std::filesystem::path filePath) {
         return;
     }
 
+    if (IsLoaded()) {
+        ClearSelectedPoints();
+        mTracks.clear();
+        mTrackPoints.clear();
+        mPathRenderers.clear();
+    }
+
     std::filesystem::path configDir = filePath.parent_path();
 
     for (pugi::xml_node trackNode : doc.child(TRACKS_CHILD_NAME)) {
@@ -340,7 +347,9 @@ void ATrackContext::RenderPointDataEditorSingle(std::shared_ptr<UTracks::UTrackP
         // Only nodes with station type None can be junctions, so show UI for one or the other.
         if (point->GetStationType() == UTracks::ENodeStationType::None) {
             if (!point->HasJunctionPartner()) {
-                if (ImGui::Button("Dropper")) {
+                ImGui::Text("No Junction");
+                ImGui::SameLine();
+                if (ImGui::Button("Choose Junction")) {
                     bSelectingJunctionPartner = true;
                 }
             }
@@ -449,11 +458,15 @@ void ATrackContext::RenderUI(ASceneCamera& camera) {
         case ETrackNodePickType::Position:
         {
             glm::vec3 avgPosition = glm::zero<glm::vec3>();
-            for (const APointSelection& s : mSelectedPoints) {
-                avgPosition += mTrackPoints[s.TrackIdx][s.PointIdx]->GetPosition();
+
+            if (mSelectedPoints.size() <= 100) {
+                for (const APointSelection& s : mSelectedPoints) {
+                    avgPosition += mTrackPoints[s.TrackIdx][s.PointIdx]->GetPosition();
+                }
+
+                avgPosition /= mSelectedPoints.size();
             }
 
-            avgPosition /= mSelectedPoints.size();
             glm::mat4 modelMtx = glm::translate(glm::identity<glm::mat4>(), avgPosition);
 
             if (ImGuizmo::Manipulate(&viewMtx[0][0], &projMtx[0][0], ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::WORLD, &modelMtx[0][0])) {

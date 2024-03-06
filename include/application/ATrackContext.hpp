@@ -78,4 +78,6 @@ public:
 
     void LoadTracks(std::filesystem::path filePath);
     void SaveTracks(std::filesystem::path dirPath);
+
+    bool IsLoaded() const { return mTracks.size() != 0; }
 };

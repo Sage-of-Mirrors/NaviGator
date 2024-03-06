@@ -9,6 +9,8 @@
 
 #include "util/rdr1util.hpp"
 
+#include "application/AOptions.hpp"
+
 #include <bstream.h>
 
 #include <imgui.h>
@@ -22,11 +24,12 @@ AGatorContext::AGatorContext() : bIsDockingConfigured(false), mMainDockSpaceID(U
 	mNavContext(std::make_shared<ANavContext>()), mTrackContext(std::make_shared<ATrackContext>()), mPropertiesPanelTopID(UINT32_MAX),
 	mPropertiesPanelBottomID(UINT32_MAX)
 {
-
+	OPTIONS.Load();
 }
 
 AGatorContext::~AGatorContext() {
 	UViewportPicker::DestroyPicker();
+	OPTIONS.Save();
 }
 
 void AGatorContext::SetUpDocking() {
@@ -63,9 +66,25 @@ void AGatorContext::RenderMenuBar() {
 			if (ImGui::MenuItem("Open...")) {
 				LoadFileCB();
 			}
-			if (ImGui::BeginMenu("Save")) {
-				if (ImGui::MenuItem("Track Data")) {
-					mTrackContext->SaveTracks("D:\\RedDead\\TrainDataSaveTest");
+			if (ImGui::BeginMenu("Railroad Data")) {
+				if (!mTrackContext->IsLoaded()) {
+					ImGui::BeginDisabled();
+				}
+
+				if (ImGui::MenuItem("Save")) {
+					if (OPTIONS.mLastSavedRailroadDir.empty()) {
+						SaveTracksAsCB();
+					}
+					else {
+						mTrackContext->SaveTracks(OPTIONS.mLastSavedRailroadDir);
+					}
+				}
+				if (ImGui::MenuItem("Save as...")) {
+					SaveTracksAsCB();
+				}
+
+				if (!mTrackContext->IsLoaded()) {
+					ImGui::EndDisabled();
 				}
 
 				ImGui::EndMenu();
@@ -143,6 +162,15 @@ void AGatorContext::Render(float deltaTime) {
 
 		ImGuiFileDialog::Instance()->Close();
 	}
+
+	if (ImGuiFileDialog::Instance()->Display("saveTracksAsDialog", 32, {800, 600})) {
+		if (ImGuiFileDialog::Instance()->IsOk()) {
+			mTrackContext->SaveTracks(ImGuiFileDialog::Instance()->GetFilePathName());
+			OPTIONS.mLastSavedRailroadDir = ImGuiFileDialog::Instance()->GetFilePathName();
+		}
+
+		ImGuiFileDialog::Instance()->Close();
+	}
 }
 
 void AGatorContext::PostRender(float deltaTime) {
@@ -165,11 +193,15 @@ void AGatorContext::OpenFile(std::filesystem::path filePath) {
 
 	if (filePath.extension() == ".ynv") {
 		mNavContext->LoadNavmesh(filePath);
+		OPTIONS.mLastOpenedDir = filePath;
 	}
 	else if (filePath.extension() == ".xml") {
 		if (filePath.stem() == "traintracks") {
 			mTrackContext->InitGLResources();
 			mTrackContext->LoadTracks(filePath);
+
+			OPTIONS.mLastOpenedDir = filePath;
+			OPTIONS.mLastOpenedRailroadDir = filePath.parent_path();
 		}
 	}
 	else if (filePath.filename() == "swrailroad.wsi") {
@@ -178,7 +210,13 @@ void AGatorContext::OpenFile(std::filesystem::path filePath) {
 }
 
 void AGatorContext::LoadFileCB() {
-	ImGuiFileDialog::Instance()->OpenDialog("loadFileDialog", "Open File", "Navmeshes{.ynv},GLTF{.gltf}", ".", 1, nullptr, ImGuiFileDialogFlags_Modal);
+	std::string startingDir = OPTIONS.mLastOpenedDir.empty() ? "." : OPTIONS.mLastOpenedDir.u8string();
+	ImGuiFileDialog::Instance()->OpenDialog("loadFileDialog", "Open File", "traintracks.xml{.xml},Navmeshes (*.ynv){.ynv}", startingDir, 1, nullptr, ImGuiFileDialogFlags_Modal);
+}
+
+void AGatorContext::SaveTracksAsCB() {
+	std::string startingDir = OPTIONS.mLastSavedRailroadDir.empty() ? "." : OPTIONS.mLastSavedRailroadDir.u8string();
+	ImGuiFileDialog::Instance()->OpenDialog("saveTracksAsDialog", "Choose Directory", nullptr, startingDir, 1, nullptr, ImGuiFileDialogFlags_Modal);
 }
 
 void AGatorContext::OnFileDropped(std::filesystem::path filePath) {

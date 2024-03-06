@@ -28,6 +28,8 @@ class AGatorContext {
 
     void LoadFileCB();
 
+    void SaveTracksAsCB();
+
     void OpenFile(std::filesystem::path filePath);
 
 public:

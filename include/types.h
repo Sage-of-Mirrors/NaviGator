@@ -10,5 +10,7 @@
 #include <filesystem>
 #include <memory>
 
+#include <Tracy.hpp>
+
 template<typename T>
 using shared_vector = std::vector<std::shared_ptr<T>>;

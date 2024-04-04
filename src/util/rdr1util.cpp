@@ -1,6 +1,6 @@
 #include "util/rdr1util.hpp"
 
-#include <bstream.h>
+#include <util/bstream.h>
 #include <pugixml.hpp>
 
 #include <sstream>

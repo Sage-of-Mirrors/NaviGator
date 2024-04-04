@@ -5,6 +5,7 @@
 class UViewport;
 class ANavContext;
 class ATrackContext;
+class ADrawableContext;
 
 class AGatorContext {
     glm::vec2 mAppPosition;
@@ -23,6 +24,7 @@ class AGatorContext {
 
     std::shared_ptr<ANavContext> mNavContext;
     std::shared_ptr<ATrackContext> mTrackContext;
+    std::shared_ptr< ADrawableContext> mDrawableContext;
 
     void RenderPropertiesPanel();
 

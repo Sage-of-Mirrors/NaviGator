@@ -9,7 +9,7 @@ struct ANavmeshRenderData {
     uint32_t mNavIndexCount;
     uint32_t mNavVBO, mNavIBO, mNavVAO;
 
-    void CreateNavResources(librdr3::UNavmeshShared data);
+    void CreateNavResources(std::shared_ptr<CNavmeshData> data);
     void DeleteNavResources();
 
     ANavmeshRenderData();

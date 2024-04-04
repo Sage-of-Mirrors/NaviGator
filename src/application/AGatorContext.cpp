@@ -3,6 +3,7 @@
 
 #include "application/ANavContext.hpp"
 #include "application/ATrackContext.hpp"
+#include "application/ADrawableContext.hpp"
 
 #include "ui/UViewport.hpp"
 #include "ui/UViewportPicker.hpp"
@@ -11,18 +12,17 @@
 
 #include "application/AOptions.hpp"
 
-#include <bstream.h>
+#include <util/bstream.h>
 
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <ImGuiFileDialog.h>
 #include "util/ImGuizmo.hpp"
 
-
 AGatorContext::AGatorContext() : bIsDockingConfigured(false), mMainDockSpaceID(UINT32_MAX), mDockNodeTopID(UINT32_MAX),
 	mDockNodeRightID(UINT32_MAX), mDockNodeDownID(UINT32_MAX), mPropertiesDockNodeID(UINT32_MAX), mAppPosition({ 0, 0 }),
-	mNavContext(std::make_shared<ANavContext>()), mTrackContext(std::make_shared<ATrackContext>()), mPropertiesPanelTopID(UINT32_MAX),
-	mPropertiesPanelBottomID(UINT32_MAX)
+	mNavContext(std::make_shared<ANavContext>()), mTrackContext(std::make_shared<ATrackContext>()), mDrawableContext(std::make_shared<ADrawableContext>()),
+	mPropertiesPanelTopID(UINT32_MAX), mPropertiesPanelBottomID(UINT32_MAX)
 {
 	OPTIONS.Load();
 }
@@ -142,6 +142,8 @@ void AGatorContext::RenderPropertiesPanel() {
 }
 
 void AGatorContext::Render(float deltaTime) {
+	ZoneScoped;
+
 	SetUpDocking();
 
 	RenderMenuBar();
@@ -194,6 +196,9 @@ void AGatorContext::OpenFile(std::filesystem::path filePath) {
 	if (filePath.extension() == ".ynv") {
 		mNavContext->LoadNavmesh(filePath);
 		OPTIONS.mLastOpenedDir = filePath;
+	}
+	else if (filePath.extension() == ".ydr") {
+		mDrawableContext->LoadDrawable(filePath);
 	}
 	else if (filePath.extension() == ".xml") {
 		if (filePath.stem() == "traintracks") {

@@ -16,7 +16,7 @@ ANavmeshRenderData::~ANavmeshRenderData() {
     DeleteNavResources();
 }
 
-void ANavmeshRenderData::CreateNavResources(librdr3::UNavmeshShared data) {
+void ANavmeshRenderData::CreateNavResources(std::shared_ptr<CNavmeshData> data) {
     uint32_t numVertices = 0;
     float* vertexData = nullptr;
     uint32_t* indexData = nullptr;
